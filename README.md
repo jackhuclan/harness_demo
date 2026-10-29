@@ -1,5 +1,8 @@
 # Agent Harness (C#)
 
+[![CI](https://github.com/jackhuclan/harness_demo/actions/workflows/ci.yml/badge.svg)](https://github.com/jackhuclan/harness_demo/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/github/license/jackhuclan/harness_demo)](https://github.com/jackhuclan/harness_demo/blob/main/LICENSE)
+
 A production-oriented, layered reference implementation of an **Agent Harness** — the development and runtime platform that hosts LLM agents. This repository is a runnable C# (.NET 8) skeleton that mirrors the architecture below, demonstrating the full request path: entry → session/routing → agent core loop → tool execution → state persistence.
 
 > 📖 中文文档：[README.zh-CN.md](./README.zh-CN.md)

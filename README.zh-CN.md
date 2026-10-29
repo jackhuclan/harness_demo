@@ -1,5 +1,8 @@
 # Agent Harness（C# 实现）
 
+[![CI](https://github.com/jackhuclan/harness_demo/actions/workflows/ci.yml/badge.svg)](https://github.com/jackhuclan/harness_demo/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/github/license/jackhuclan/harness_demo)](https://github.com/jackhuclan/harness_demo/blob/main/LICENSE)
+
 面向生产的 **Agent Harness（智能体运行保障平台）** 分层参考实现。本仓库是一个可运行的 C#（.NET 8）骨架，严格对应下方架构图，演示智能体从「入口 → 会话路由 → 核心引擎循环 → 工具执行 → 状态持久化」的完整链路。
 
 > 📖 English: [README.md](./README.md)
