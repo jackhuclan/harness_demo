@@ -30,6 +30,42 @@ export async function listTools(): Promise<{ name: string; description: string }
   }
 }
 
+export interface SessionSummary {
+  sessionId: string;
+  messageCount: number;
+  updatedAt: string;
+  preview: string;
+}
+
+export async function listSessions(): Promise<SessionSummary[]> {
+  try {
+    const res = await fetch(`${API_BASE}/sessions`);
+    if (!res.ok) return [];
+    return await res.json();
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchSessionMessages(sessionId: string): Promise<Message[]> {
+  try {
+    const res = await fetch(`${API_BASE}/sessions/${sessionId}`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.messages ?? []).map((m: any) => ({
+      role: m.role === "User" ? "user" : m.role === "Assistant" ? "assistant" : "assistant",
+      content: m.content,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+interface Message {
+  role: "user" | "assistant";
+  content: string;
+}
+
 /** 流式对话：逐段调用 onDelta，返回完整文本 */
 export async function sendChatStream(
   sessionId: string,

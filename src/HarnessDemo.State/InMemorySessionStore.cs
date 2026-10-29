@@ -32,4 +32,12 @@ public sealed class InMemorySessionStore : ISessionStore
         }
         return Task.CompletedTask;
     }
+
+    public IReadOnlyList<AgentSession> ListAll()
+    {
+        lock (_lock)
+        {
+            return _sessions.Values.OrderByDescending(s => s.UpdatedAt).ToList();
+        }
+    }
 }

@@ -14,4 +14,5 @@ public interface ISessionStore
 {
     Task<AgentSession> GetOrCreateAsync(string sessionId, CancellationToken ct);
     Task SaveAsync(AgentSession session, CancellationToken ct);
+    IReadOnlyList<AgentSession> ListAll();
 }
