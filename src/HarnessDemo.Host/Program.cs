@@ -8,54 +8,80 @@ using HarnessDemo.Skills;
 using HarnessDemo.State;
 
 // =====================================================================
-// Agent Harness Demo —— 入口层（对应架构图 Web/API/Bot/Voice 入口）
-// 这里是组装根（Composition Root）：手工把各层 wiring 在一起。
-// 生产环境可换成 Microsoft.Extensions.DependencyInjection。
+// Agent Harness Demo —— 入口层：ASP.NET Core Web API
+// 对应架构图「入口层 / API 开放接口」。
+// 用内置 DI 把各分层装配起来；后续可平滑替换为 Bot / Web / Voice 入口。
 // =====================================================================
 
-Console.OutputEncoding = System.Text.Encoding.UTF8;
-Console.WriteLine("==============================================");
-Console.WriteLine("       Agent Harness (C#)  Demo");
-Console.WriteLine("  分层：入口 -> 会话路由 -> AgentCore -> 能力/执行 -> 状态/模型/安全");
-Console.WriteLine("==============================================");
+var builder = WebApplication.CreateBuilder(args);
+builder.WebHost.UseUrls("http://localhost:5000");
 
-// --- 执行层：注册能力层工具插件 ---
-var executor = new ToolExecutor();
-executor.Register(new CalculatorTool());
-executor.Register(new TimeTool());
-
-// --- 状态层：各类存储 ---
-var sessionStore = new InMemorySessionStore();
-var memoryStore = new InMemoryMemoryStore();
-var taskStore = new InMemoryTaskStore();
+// --- 状态层 ---
+builder.Services.AddSingleton<ISessionStore, InMemorySessionStore>();
+builder.Services.AddSingleton<IMemoryStore, InMemoryMemoryStore>();
+builder.Services.AddSingleton<ITaskStore, InMemoryTaskStore>();
 
 // --- 模型层 / 安全层 / Agent Core ---
-var llm = new RuleBasedLlmClient();
-var auditor = new SensitiveWordAuditor();
-var contextMgr = new ContextManager();
-var agent = new Agent(llm, executor, sessionStore, memoryStore, auditor, contextMgr);
+builder.Services.AddSingleton<ILlmClient, RuleBasedLlmClient>();
+builder.Services.AddSingleton<IContentAuditor, SensitiveWordAuditor>();
+builder.Services.AddSingleton<ContextManager>();
+builder.Services.AddSingleton<Agent>();
+
+// --- 执行层 + 能力层插件 ---
+builder.Services.AddSingleton<ToolExecutor>();
+builder.Services.AddSingleton<IToolExecutor>(sp => sp.GetRequiredService<ToolExecutor>());
+builder.Services.AddSingleton<ITool, CalculatorTool>();
+builder.Services.AddSingleton<ITool, TimeTool>();
 
 // --- 会话与路由层 ---
-var router = new Router();
-var sessionMgr = new SessionManager(sessionStore, agent, router);
+builder.Services.AddSingleton<Router>();
+builder.Services.AddSingleton<SessionManager>();
 
-// --- 跑一组 demo 对话脚本，观察每层链路日志 ---
-const string sessionId = "demo-session-001";
+var app = builder.Build();
 
-string[] script =
+// 把 DI 注册的能力层插件登记进执行层注册表
+var executor = app.Services.GetRequiredService<ToolExecutor>();
+foreach (var tool in app.Services.GetServices<ITool>())
+    executor.Register(tool);
+
+// --- 入口层：HTTP API ---
+
+// 服务发现 / 健康检查
+app.MapGet("/", () => Results.Ok(new
 {
-    "现在几点了？",                              // 路由到 get_time 工具
-    "请计算 12 * (3 + 4) / 2",                  // 路由到 calculator 工具
-    "你好，介绍一下你自己",                       // 模型直接回答
-    "帮我查询 secret 密码本",                    // 被安全层拦截
-};
+    name = "Agent Harness API",
+    endpoints = new[] { "POST /chat", "GET /tools", "GET /sessions/{sessionId}" }
+}));
 
-foreach (var q in script)
+// 对话入口：一个 sessionId 即一个会话，多轮上下文由 SessionStore 维护
+app.MapPost("/chat", async (ChatRequest req, SessionManager sessions, CancellationToken ct) =>
 {
-    Console.WriteLine($"\n[User] {q}");
-    var answer = await sessionMgr.AskAsync(sessionId, q);
-    Console.WriteLine($"[Agent] {answer}");
-}
+    if (string.IsNullOrWhiteSpace(req.SessionId) || string.IsNullOrWhiteSpace(req.Message))
+        return Results.BadRequest(new { error = "sessionId 与 message 不能为空" });
 
-Console.WriteLine("\n==============================================");
-Console.WriteLine("Demo 结束。退出。");
+    var reply = await sessions.AskAsync(req.SessionId, req.Message, ct);
+    return Results.Ok(new ChatResponse(req.SessionId, reply, DateTimeOffset.Now));
+});
+
+// 查看当前挂载的能力插件（Planner 可见的工具列表）
+app.MapGet("/tools", (ToolExecutor exec) => Results.Ok(
+    exec.RegisteredTools.Select(t => new { t.Name, t.Description })));
+
+// 查看会话历史（状态层 Session Store 的只读视图）
+app.MapGet("/sessions/{sessionId}", async (string sessionId, ISessionStore store, CancellationToken ct) =>
+{
+    var s = await store.GetOrCreateAsync(sessionId, ct);
+    return Results.Ok(new
+    {
+        sessionId = s.Id,
+        messageCount = s.Messages.Count,
+        updatedAt = s.UpdatedAt,
+        messages = s.Messages.Select(m => new { role = m.Role.ToString(), m.Content, tool = m.ToolName })
+    });
+});
+
+app.Run();
+
+// --- 请求 / 响应契约 ---
+public record ChatRequest(string SessionId, string Message);
+public record ChatResponse(string SessionId, string Reply, DateTimeOffset ServerTime);

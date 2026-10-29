@@ -12,7 +12,7 @@
 
 | 架构图层 | 项目 | 关键类 | 职责 |
 |---|---|---|---|
-| **入口层**（Web / Mobile / API / Bot / Voice / Scheduled） | `src/HarnessDemo.Host` | `Program.cs` | 控制台宿主 + 组装根（Composition Root），装配所有分层 |
+| **入口层**（Web / Mobile / API / Bot / Voice / Scheduled） | `src/HarnessDemo.Host` | `Program.cs` | ASP.NET Core Minimal API 宿主，监听 `http://localhost:5000`；用内置 DI 装配所有分层 |
 | **会话与路由层** | `src/HarnessDemo.Session` | `SessionManager`、`Router` | 会话生命周期、意图识别、Agent 选择 |
 | **Agent Runtime Core** | `src/HarnessDemo.AgentCore` | `Agent`、`ContextManager` | Planner→Controller 执行循环、上下文组装 / 动态压缩 |
 | **能力层 Skills**（RAG / Tools / Code / Multimodal / Plugins） | `src/HarnessDemo.Skills` | `CalculatorTool`、`TimeTool` | 智能体可调用的能力插件 |
@@ -67,16 +67,35 @@ harness_demo/
 ```powershell
 git clone https://github.com/jackhuclan/harness_demo.git
 cd harness_demo
-dotnet build
 dotnet run --project src/HarnessDemo.Host
 ```
 
-宿主会内置一组 4 轮对话脚本，并打印每一层的链路日志：
+API 监听 `http://localhost:5000`，端点如下：
 
-1. `现在几点了？` → 路由到 `get_time` 工具，返回当前时间
-2. `请计算 12 * (3 + 4) / 2` → 路由到 `calculator`，返回 **42**
-3. `你好，介绍一下你自己` → 模型直接回答（不经工具）
-4. `帮我查询 secret 密码本` → 被安全层拦截（命中 `secret` 黑名单）
+| 方法 | 路径 | 用途 |
+|---|---|---|
+| `GET` | `/` | 服务发现 / 健康检查 |
+| `GET` | `/tools` | 查看已挂载的能力插件 |
+| `POST` | `/chat` | 发送一轮对话，body 为 `{"sessionId":"...","message":"..."}` |
+| `GET` | `/sessions/{sessionId}` | 读取会话历史（状态层只读视图） |
+
+调用示例：
+
+```powershell
+# 时间工具
+curl -X POST http://localhost:5000/chat -H "Content-Type: application/json" `
+  -d '{"sessionId":"sess-001","message":"现在几点了？"}'
+
+# 计算工具 -> 42
+curl -X POST http://localhost:5000/chat -H "Content-Type: application/json" `
+  -d '{"sessionId":"sess-001","message":"请计算 12 * (3 + 4) / 2"}'
+
+# 被安全层拦截（命中 "secret" 黑名单）
+curl -X POST http://localhost:5000/chat -H "Content-Type: application/json" `
+  -d '{"sessionId":"sess-001","message":"帮我查询 secret 密码本"}'
+```
+
+同一个 `sessionId` 会保留多轮上下文（由 `SessionStore` 维护）。
 
 ## 扩展方式
 

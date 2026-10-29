@@ -12,7 +12,7 @@ The platform is organized into eight layers (plus a cross-cutting security colum
 
 | Architecture layer | Project | Key types | Responsibility |
 |---|---|---|---|
-| **Entry** (Web / Mobile / API / Bot / Voice / Scheduled) | `src/HarnessDemo.Host` | `Program.cs` | Console host + composition root; wires every layer together |
+| **Entry** (Web / Mobile / API / Bot / Voice / Scheduled) | `src/HarnessDemo.Host` | `Program.cs` | ASP.NET Core Minimal API host on `http://localhost:5000`; wires every layer via built-in DI |
 | **Session & Routing** | `src/HarnessDemo.Session` | `SessionManager`, `Router` | Session lifecycle, intent classification, agent selection |
 | **Agent Runtime Core** | `src/HarnessDemo.AgentCore` | `Agent`, `ContextManager` | Planner→Controller execution loop, context assembly / dynamic compression |
 | **Skills** (RAG / Tools / Code / Multimodal / Plugins) | `src/HarnessDemo.Skills` | `CalculatorTool`, `TimeTool` | Capability plugins the agent can call |
@@ -67,16 +67,35 @@ Prerequisites: .NET 8 SDK.
 ```powershell
 git clone https://github.com/jackhuclan/harness_demo.git
 cd harness_demo
-dotnet build
 dotnet run --project src/HarnessDemo.Host
 ```
 
-The host runs a built-in 4-turn script and prints the per-layer trace:
+The API listens on `http://localhost:5000`. Endpoints:
 
-1. `现在几点了？` → routes to the `get_time` tool, returns current time
-2. `请计算 12 * (3 + 4) / 2` → routes to `calculator`, returns **42**
-3. `你好，介绍一下你自己` → LLM answers directly (no tool)
-4. `帮我查询 secret 密码本` → blocked by the security layer (`secret` blacklist hit)
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/` | Service discovery / health |
+| `GET` | `/tools` | List registered skill plugins |
+| `POST` | `/chat` | Send a turn; body `{"sessionId":"...","message":"..."}` |
+| `GET` | `/sessions/{sessionId}` | Read session history (state layer) |
+
+Sample calls:
+
+```powershell
+# time tool
+curl -X POST http://localhost:5000/chat -H "Content-Type: application/json" `
+  -d '{"sessionId":"sess-001","message":"现在几点了？"}'
+
+# calculator tool -> 42
+curl -X POST http://localhost:5000/chat -H "Content-Type: application/json" `
+  -d '{"sessionId":"sess-001","message":"请计算 12 * (3 + 4) / 2"}'
+
+# blocked by security layer (hits "secret" blacklist)
+curl -X POST http://localhost:5000/chat -H "Content-Type: application/json" `
+  -d '{"sessionId":"sess-001","message":"帮我查询 secret 密码本"}'
+```
+
+Reusing the same `sessionId` keeps multi-turn context (maintained by `SessionStore`).
 
 ## Extending the harness
 
