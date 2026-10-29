@@ -19,8 +19,8 @@ public static class AgentRegistry
             "我可直接统计生产片 OVL 情况（数据统计 / 异常分析 / 分解 / 归因 / 决策 / 补偿 / 多技能串联）。",
             new[] { "ovl_statistics", "ovl_anomaly", "budget_decomp", "attribution", "decision_advice", "r2r_comp", "ovl_chain" }),
 
-        new AgentDef("tma", "机台监测分析", "机台性能、周趋势、硬件健康（光源寿命）",
-            "你是 OVL 机台监测专家，负责机台性能统计、趋势分析和硬件健康评估。",
+        new AgentDef("tma", "机台监测分析", "机台性能检测、近两月趋势、光源硬件寿命预估",
+            "我是机台监测分析智能体。可统计机台本身的性能（重复性、TIS 误差等），并对机台硬件状态做分析与寿命预估。",
             new[] { "tool_performance", "tool_trend", "hardware_health" }),
 
         new AgentDef("tdi", "机台诊断修复", "报错诊断、处置确认执行、经验学习",
