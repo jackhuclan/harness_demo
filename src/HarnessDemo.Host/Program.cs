@@ -61,7 +61,19 @@ builder.Services.AddSingleton<SessionManager>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// --- CORS：允许前端 (Next.js :3000) 跨域调用 ---
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+        policy.WithOrigins("http://localhost:3000", "http://127.0.0.1:3000")
+              .AllowAnyHeader()
+              .AllowAnyMethod());
+});
+
 var app = builder.Build();
+
+// CORS 必须放在路由/端点之前
+app.UseCors();
 
 // Swagger 中间件：暴露 /swagger/v1/swagger.json 和 /swagger UI
 app.UseSwagger();
