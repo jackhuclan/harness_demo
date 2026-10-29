@@ -23,8 +23,8 @@ public static class AgentRegistry
             "我是机台监测分析智能体。可统计机台本身的性能（重复性、TIS 误差等），并对机台硬件状态做分析与寿命预估。",
             new[] { "tool_performance", "tool_trend", "hardware_health" }),
 
-        new AgentDef("tdi", "机台诊断修复", "报错诊断、处置确认执行、经验学习",
-            "你是 OVL 机台诊断修复专家，负责报错定位、处置执行和经验沉淀。",
+        new AgentDef("tdi", "机台诊断修复", "精对准/粗聚焦报错根因诊断、处置执行、经验学习",
+            "我是机台诊断修复智能体。可识别机台报错根因、自动处置并支持用户介入验证。当用户点击示例或输入指令（如「看下当前机台为什么报错」）触发。",
             new[] { "ovl_diagnose", "disposition_confirm", "experience_learn" }),
     };
 
