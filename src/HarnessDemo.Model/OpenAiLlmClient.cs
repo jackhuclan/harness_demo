@@ -74,6 +74,27 @@ public sealed class OpenAiLlmClient : ILlmClient
         }
     }
 
+    public async IAsyncEnumerable<StreamEvent> StreamDecideAsync(
+        IReadOnlyList<AbstractionsChat> context,
+        IReadOnlyList<ITool> availableTools,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct)
+    {
+        // 复用非流式决策，拿到结果后按段 yield 文本，模拟逐字输出
+        var d = await DecideAsync(context, availableTools, ct);
+        if (d.NeedsTool)
+        {
+            yield return new StreamDone(true, d.ToolName, d.ToolArgsJson);
+            yield break;
+        }
+        var text = d.FinalText ?? "";
+        for (var i = 0; i < text.Length; i += 4)
+        {
+            yield return new TextDelta(text.Substring(i, Math.Min(4, text.Length - i)));
+            await Task.Delay(15, ct);
+        }
+        yield return new StreamDone(false, null, null);
+    }
+
     /// <summary>把我们的上下文消息翻译成 OpenAI Chat 消息协议。</summary>
     private static List<OpenAIChat> ToOpenAiMessages(IReadOnlyList<AbstractionsChat> context)
     {

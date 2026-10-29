@@ -82,4 +82,65 @@ public sealed class Agent
 
         return finalAnswer;
     }
+
+    /// <summary>流式版本：逐段 yield 文本增量，最后把完整答复写入会话历史。</summary>
+    public async IAsyncEnumerable<string> StreamRunAsync(
+        string sessionId, string userInput,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct)
+    {
+        var audit = await _auditor.AuditAsync(userInput, ct);
+        if (!audit.Passed)
+        {
+            yield return $"⛔ {audit.Reason}";
+            yield break;
+        }
+
+        var session = await _sessions.GetOrCreateAsync(sessionId, ct);
+        session.Messages.Add(new ChatMessage(Role.User, userInput));
+
+        var sb = new System.Text.StringBuilder();
+
+        for (var hop = 1; hop <= MaxHops; hop++)
+        {
+            Console.WriteLine($"[AgentCore/Controller] --- 流式第 {hop} 轮决策 ---");
+            var context = _context.Build(session.Messages);
+
+            string? pendingTool = null;
+            string? pendingArgs = null;
+            var toolPhase = false;
+
+            await foreach (var ev in _llm.StreamDecideAsync(context, _executor.RegisteredTools, ct))
+            {
+                switch (ev)
+                {
+                    case TextDelta td:
+                        sb.Append(td.Text);
+                        yield return td.Text;
+                        break;
+                    case StreamDone sd:
+                        pendingTool = sd.ToolName;
+                        pendingArgs = sd.ToolArgsJson;
+                        toolPhase = sd.NeedsTool;
+                        break;
+                }
+            }
+
+            if (toolPhase && pendingTool is not null)
+            {
+                var result = await _executor.ExecuteAsync(pendingTool, pendingArgs ?? "{}", ct);
+                session.Messages.Add(new ChatMessage(Role.Assistant, $"调用工具 {pendingTool}", pendingTool));
+                session.Messages.Add(new ChatMessage(Role.Tool,
+                    result.Success ? result.Output : $"执行失败：{result.Error}", pendingTool));
+                // 工具结果不直接推给前端，交给下一轮模型组织语言
+                continue;
+            }
+
+            break;
+        }
+
+        var finalAnswer = sb.ToString();
+        session.Messages.Add(new ChatMessage(Role.Assistant, finalAnswer));
+        await _sessions.SaveAsync(session, ct);
+        await _memory.AppendAsync(sessionId, "last_answer", finalAnswer, ct);
+    }
 }

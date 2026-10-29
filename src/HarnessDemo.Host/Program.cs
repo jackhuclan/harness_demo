@@ -112,6 +112,38 @@ app.MapPost("/chat", async (ChatRequest req, SessionManager sessions, Cancellati
 app.MapGet("/tools", (ToolExecutor exec) => Results.Ok(
     exec.RegisteredTools.Select(t => new { t.Name, t.Description })));
 
+// 流式对话：SSE (text/event-stream)，逐字返回模型输出
+app.MapPost("/chat/stream", async (ChatRequest req, Agent agent, HttpContext ctx) =>
+{
+    if (string.IsNullOrWhiteSpace(req.SessionId) || string.IsNullOrWhiteSpace(req.Message))
+    {
+        ctx.Response.StatusCode = 400;
+        await ctx.Response.WriteAsync("{\"error\":\"sessionId 与 message 不能为空\"}");
+        return;
+    }
+    ctx.Response.Headers["Content-Type"] = "text/event-stream; charset=utf-8";
+    ctx.Response.Headers["Cache-Control"] = "no-cache";
+    ctx.Response.Headers["X-Accel-Buffering"] = "no";
+
+    var writer = ctx.Response.BodyWriter;
+    try
+    {
+        await foreach (var chunk in agent.StreamRunAsync(req.SessionId, req.Message, ctx.RequestAborted))
+        {
+            // SSE 格式：data: <json>\n\n
+            var payload = System.Text.Json.JsonSerializer.Serialize(new { delta = chunk });
+            var bytes = System.Text.Encoding.UTF8.GetBytes($"data: {payload}\n\n");
+            await writer.WriteAsync(bytes, ctx.RequestAborted);
+            await writer.FlushAsync(ctx.RequestAborted);
+        }
+        // 结束标记
+        var done = System.Text.Encoding.UTF8.GetBytes("data: [DONE]\n\n");
+        await writer.WriteAsync(done, ctx.RequestAborted);
+        await writer.FlushAsync(ctx.RequestAborted);
+    }
+    catch (OperationCanceledException) { /* 客户端断开 */ }
+});
+
 // 查看会话历史（状态层 Session Store 的只读视图）
 app.MapGet("/sessions/{sessionId}", async (string sessionId, ISessionStore store, CancellationToken ct) =>
 {

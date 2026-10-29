@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { sendChat, listTools } from "@/lib/api";
+import { sendChatStream, listTools } from "@/lib/api";
 
 interface Message {
   role: "user" | "assistant";
@@ -10,7 +10,6 @@ interface Message {
 
 // 每个浏览器 tab 一个稳定的 sessionId，保持多轮上下文
 function useSessionId() {
-  // 初始为空，避免服务端/客户端随机值不一致导致水合错误
   const [id, setId] = useState("");
   useEffect(() => {
     const existing = sessionStorage.getItem("harness_session");
@@ -21,13 +20,33 @@ function useSessionId() {
   return id;
 }
 
+// 主题：默认 light，可切换 dark
+function useTheme() {
+  const [dark, setDark] = useState(false);
+  useEffect(() => {
+    const saved = localStorage.getItem("harness_theme");
+    const isDark = saved === "dark";
+    setDark(isDark);
+    document.documentElement.classList.toggle("dark", isDark);
+  }, []);
+  function toggle() {
+    const next = !dark;
+    setDark(next);
+    document.documentElement.classList.toggle("dark", next);
+    localStorage.setItem("harness_theme", next ? "dark" : "light");
+  }
+  return { dark, toggle };
+}
+
 export default function ChatPage() {
   const sessionId = useSessionId();
+  const { dark, toggle } = useTheme();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [tools, setTools] = useState<{ name: string; description: string }[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     listTools().then(setTools);
@@ -43,14 +62,36 @@ export default function ChatPage() {
     setInput("");
     setMessages((m) => [...m, { role: "user", content }]);
     setLoading(true);
+
+    // 先插入一个空的 assistant 气泡，流式填充
+    setMessages((m) => [...m, { role: "assistant", content: "" }]);
+    const lastIdx = messages.length + 1;
+
     try {
-      const res = await sendChat(sessionId, content);
-      setMessages((m) => [...m, { role: "assistant", content: res.reply }]);
+      abortRef.current?.abort();
+      const ac = new AbortController();
+      abortRef.current = ac;
+      await sendChatStream(
+        sessionId,
+        content,
+        (delta) => {
+          setMessages((m) => {
+            const next = [...m];
+            next[lastIdx] = { role: "assistant", content: next[lastIdx].content + delta };
+            return next;
+          });
+        },
+        ac.signal
+      );
     } catch (e: any) {
-      setMessages((m) => [
-        ...m,
-        { role: "assistant", content: `⚠️ 请求失败：${e.message}（后端是否启动在 http://localhost:5000？）` },
-      ]);
+      setMessages((m) => {
+        const next = [...m];
+        next[lastIdx] = {
+          role: "assistant",
+          content: `⚠️ 请求失败：${e.message}（后端是否启动在 http://localhost:5000？）`,
+        };
+        return next;
+      });
     } finally {
       setLoading(false);
     }
@@ -65,37 +106,46 @@ export default function ChatPage() {
   return (
     <div className="mx-auto flex h-full max-w-3xl flex-col p-4">
       {/* 顶栏 */}
-      <header className="mb-4 flex items-center justify-between rounded-xl bg-slate-800/60 px-4 py-3 backdrop-blur">
+      <header className="mb-4 flex items-center justify-between rounded-xl bg-white/70 px-4 py-3 shadow-sm backdrop-blur dark:bg-slate-800/60">
         <div>
           <h1 className="text-lg font-semibold">Agent Harness Chat</h1>
-          <p className="text-xs text-slate-400">
-            session: <code className="text-slate-300">{sessionId}</code>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            session: <code className="text-slate-700 dark:text-slate-300">{sessionId}</code>
           </p>
         </div>
-        <div className="hidden text-right text-xs text-slate-400 sm:block">
-          <div className="mb-1">已挂载工具</div>
-          {tools.map((t) => (
-            <span key={t.name} className="ml-1 rounded bg-emerald-500/20 px-1.5 py-0.5 text-emerald-300">
-              {t.name}
-            </span>
-          ))}
+        <div className="flex items-center gap-3">
+          <div className="hidden text-right text-xs text-slate-500 dark:text-slate-400 sm:block">
+            <div className="mb-1">已挂载工具</div>
+            {tools.map((t) => (
+              <span key={t.name} className="ml-1 rounded bg-emerald-500/20 px-1.5 py-0.5 text-emerald-600 dark:text-emerald-300">
+                {t.name}
+              </span>
+            ))}
+          </div>
+          <button
+            onClick={toggle}
+            title={dark ? "切换到浅色" : "切换到深色"}
+            className="rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm dark:border-slate-600"
+          >
+            {dark ? "🌙" : "☀️"}
+          </button>
         </div>
       </header>
 
       {/* 消息区 */}
       <div
         ref={scrollRef}
-        className="mb-4 flex-1 space-y-3 overflow-y-auto rounded-xl bg-slate-800/40 p-4"
+        className="mb-4 flex-1 space-y-3 overflow-y-auto rounded-xl bg-white/50 p-4 shadow-sm dark:bg-slate-800/40"
       >
         {messages.length === 0 && (
-          <div className="pt-10 text-center text-slate-400">
+          <div className="pt-10 text-center text-slate-500 dark:text-slate-400">
             <p className="mb-3">开始对话吧，试试：</p>
             <div className="flex flex-wrap justify-center gap-2">
               {suggestions.map((s) => (
                 <button
                   key={s}
                   onClick={() => handleSend(s)}
-                  className="rounded-full border border-slate-600 px-3 py-1.5 text-sm text-slate-300 transition hover:border-emerald-400 hover:text-emerald-300"
+                  className="rounded-full border border-slate-300 px-3 py-1.5 text-sm text-slate-600 transition hover:border-emerald-500 hover:text-emerald-600 dark:border-slate-600 dark:text-slate-300 dark:hover:border-emerald-400 dark:hover:text-emerald-300"
                 >
                   {s}
                 </button>
@@ -112,20 +162,13 @@ export default function ChatPage() {
               className={`max-w-[80%] whitespace-pre-wrap rounded-2xl px-4 py-2 text-sm ${
                 m.role === "user"
                   ? "bg-emerald-600 text-white"
-                  : "bg-slate-700 text-slate-100"
+                  : "bg-slate-200 text-slate-900 dark:bg-slate-700 dark:text-slate-100"
               }`}
             >
-              {m.content}
+              {m.content || (loading ? "▍" : "")}
             </div>
           </div>
         ))}
-        {loading && (
-          <div className="flex justify-start">
-            <div className="rounded-2xl bg-slate-700 px-4 py-2 text-sm text-slate-300">
-              <span className="inline-block animate-pulse">正在思考…</span>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* 输入区 */}
@@ -135,7 +178,7 @@ export default function ChatPage() {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSend()}
           placeholder="输入消息，回车发送…"
-          className="flex-1 rounded-xl border border-slate-600 bg-slate-800 px-4 py-3 text-sm text-slate-100 placeholder-slate-500 outline-none focus:border-emerald-400"
+          className="flex-1 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-emerald-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:border-emerald-400"
         />
         <button
           onClick={() => handleSend()}

@@ -56,4 +56,25 @@ public sealed class RuleBasedLlmClient : ILlmClient
         Console.WriteLine("[Model/Planner] 无需工具，直接生成最终答复");
         return Task.FromResult(new LlmDecision(false, null, null, reply));
     }
+
+    public async IAsyncEnumerable<StreamEvent> StreamDecideAsync(
+        IReadOnlyList<ChatMessage> context,
+        IReadOnlyList<ITool> availableTools,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct)
+    {
+        var d = await DecideAsync(context, availableTools, ct);
+        if (d.NeedsTool)
+        {
+            yield return new StreamDone(true, d.ToolName, d.ToolArgsJson);
+            yield break;
+        }
+        // 模拟逐字输出
+        var text = d.FinalText ?? "";
+        for (var i = 0; i < text.Length; i += 3)
+        {
+            yield return new TextDelta(text.Substring(i, Math.Min(3, text.Length - i)));
+            await Task.Delay(20, ct);
+        }
+        yield return new StreamDone(false, null, null);
+    }
 }

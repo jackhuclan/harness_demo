@@ -3,7 +3,15 @@
 @tailwind utilities;
 
 html, body { height: 100%; }
+
+/* 默认 light 主题 */
 body {
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+  color: #0f172a;
+}
+
+/* dark 主题：在 <html class="dark"> 时生效 */
+html.dark body {
   background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
   color: #e2e8f0;
 }
