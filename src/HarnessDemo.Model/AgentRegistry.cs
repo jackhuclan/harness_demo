@@ -8,7 +8,7 @@ public static class AgentRegistry
     public static readonly AgentDef[] Agents = new[]
     {
         new AgentDef("intro", "智能体介绍", "介绍整个系统的能力与使用方式",
-            "你是 Agent Harness 的引导助手，向用户介绍系统能力和各智能体用途。",
+            "我是 OVL Agent 介绍助手。当你没有明确目的时，我会为你介绍系统有哪些技能、功能，以及如何开始使用。",
             Array.Empty<string>()),
 
         new AgentDef("recipe", "处方管理", "Wafer 装载、处方分析、处方优化、建方流程",
