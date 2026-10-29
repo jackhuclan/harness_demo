@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/HarnessDemo.Abstractions/HarnessDemo.Abstractions.csproj" />
+    <Project Path="src/HarnessDemo.AgentCore/HarnessDemo.AgentCore.csproj" />
+    <Project Path="src/HarnessDemo.Execution/HarnessDemo.Execution.csproj" />
+    <Project Path="src/HarnessDemo.Host/HarnessDemo.Host.csproj" />
+    <Project Path="src/HarnessDemo.Model/HarnessDemo.Model.csproj" />
+    <Project Path="src/HarnessDemo.Security/HarnessDemo.Security.csproj" />
+    <Project Path="src/HarnessDemo.Session/HarnessDemo.Session.csproj" />
+    <Project Path="src/HarnessDemo.Skills/HarnessDemo.Skills.csproj" />
+    <Project Path="src/HarnessDemo.State/HarnessDemo.State.csproj" />
+  </Folder>
+</Solution>

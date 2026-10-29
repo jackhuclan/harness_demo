@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\HarnessDemo.Abstractions\HarnessDemo.Abstractions.csproj" />
+    <ProjectReference Include="..\HarnessDemo.AgentCore\HarnessDemo.AgentCore.csproj" />
+    <ProjectReference Include="..\HarnessDemo.Execution\HarnessDemo.Execution.csproj" />
+    <ProjectReference Include="..\HarnessDemo.Model\HarnessDemo.Model.csproj" />
+    <ProjectReference Include="..\HarnessDemo.Security\HarnessDemo.Security.csproj" />
+    <ProjectReference Include="..\HarnessDemo.Session\HarnessDemo.Session.csproj" />
+    <ProjectReference Include="..\HarnessDemo.Skills\HarnessDemo.Skills.csproj" />
+    <ProjectReference Include="..\HarnessDemo.State\HarnessDemo.State.csproj" />
+  </ItemGroup>
+</Project>
