@@ -10,15 +10,14 @@ interface Message {
 
 // 每个浏览器 tab 一个稳定的 sessionId，保持多轮上下文
 function useSessionId() {
-  const [id] = useState(
-    () =>
-      (typeof window !== "undefined" &&
-        sessionStorage.getItem("harness_session")) ||
-      `web-${Date.now().toString(36)}`
-  );
+  // 初始为空，避免服务端/客户端随机值不一致导致水合错误
+  const [id, setId] = useState("");
   useEffect(() => {
-    sessionStorage.setItem("harness_session", id);
-  }, [id]);
+    const existing = sessionStorage.getItem("harness_session");
+    const next = existing ?? `web-${Date.now().toString(36)}`;
+    sessionStorage.setItem("harness_session", next);
+    setId(next);
+  }, []);
   return id;
 }
 
@@ -40,7 +39,7 @@ export default function ChatPage() {
 
   async function handleSend(text?: string) {
     const content = (text ?? input).trim();
-    if (!content || loading) return;
+    if (!content || loading || !sessionId) return;
     setInput("");
     setMessages((m) => [...m, { role: "user", content }]);
     setLoading(true);
