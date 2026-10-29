@@ -50,7 +50,7 @@ export default function ChatPage() {
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    listTools().then(setTools);
+    listTools().then(setTools).catch(() => setTools([]));
   }, []);
 
   useEffect(() => {

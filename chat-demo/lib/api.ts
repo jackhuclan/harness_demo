@@ -21,9 +21,13 @@ export async function sendChat(
 }
 
 export async function listTools(): Promise<{ name: string; description: string }[]> {
-  const res = await fetch(`${API_BASE}/tools`);
-  if (!res.ok) return [];
-  return res.json();
+  try {
+    const res = await fetch(`${API_BASE}/tools`);
+    if (!res.ok) return [];
+    return await res.json();
+  } catch {
+    return [];
+  }
 }
 
 /** 流式对话：逐段调用 onDelta，返回完整文本 */
