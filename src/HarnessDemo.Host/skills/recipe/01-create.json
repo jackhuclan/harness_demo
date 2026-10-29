@@ -1,0 +1,9 @@
+{
+  "id": "recipe_create",
+  "name": "技能1 · 处方建立及调试",
+  "agent": "recipe",
+  "trigger": "帮我给 Foup2 的 slot5 建个 OVL 处方",
+  "description": "引导 13 步建方流程：WaferMap → 对准建模 → 创建 Test → 训练 Test → 物理参数 → 量测 Field → Data culling → TIS Optimization → 性能确认 → 量测测试 → 自动分析 → 收尾。关键步骤暂停等待确认。",
+  "tool": "recipe_create",
+  "toolArgs": "{}"
+}

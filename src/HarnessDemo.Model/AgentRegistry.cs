@@ -12,7 +12,7 @@ public static class AgentRegistry
             Array.Empty<string>()),
 
         new AgentDef("recipe", "处方管理", "Wafer 装载、处方分析、处方优化、建方流程",
-            "你是 OVL 处方管理专家，负责 Wafer 装载、处方分析、性能优化和 13 步建方流程。",
+            "我是 OVL Agent，处方管理。支持两类任务：① 处方建立及调试、② 处方分析。",
             new[] { "wafer_load", "recipe_analyze", "recipe_optimize", "recipe_create", "custom_skill_learn" }),
 
         new AgentDef("pda", "生产数据分析", "OVL 统计 / 异常 / 分解 / 归因 / 决策 / 补偿 / 多技能串联",
