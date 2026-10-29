@@ -231,15 +231,17 @@ app.MapGet("/sessions/{sessionId}", async (string sessionId, ISessionStore store
     });
 });
 
-// 列出所有会话（侧边栏历史列表）
+// 列出所有会话（侧边栏历史列表，过滤空会话）
 app.MapGet("/sessions", (ISessionStore store) => Results.Ok(
-    store.ListAll().Select(s => new
-    {
-        sessionId = s.Id,
-        messageCount = s.Messages.Count,
-        updatedAt = s.UpdatedAt,
-        preview = s.Messages.LastOrDefault(m => m.Role == HarnessDemo.Abstractions.Role.User)?.Content ?? "(空会话)"
-    })));
+    store.ListAll()
+        .Where(s => s.Messages.Count > 0)
+        .Select(s => new
+        {
+            sessionId = s.Id,
+            messageCount = s.Messages.Count,
+            updatedAt = s.UpdatedAt,
+            preview = s.Messages.LastOrDefault(m => m.Role == HarnessDemo.Abstractions.Role.User)?.Content ?? "(空会话)"
+        })));
 
 app.Run();
 
