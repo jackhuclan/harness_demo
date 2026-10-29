@@ -1,6 +1,7 @@
 ---
 name: ovl-pda-budget
 description: OVL 生产数据分析 - 性能分解 Budget。当用户询问数据差异贡献项、误差预算分解时使用。触发词："差异有多大"、"主要贡献项"、"budget"、"分解"。
+allowed-tools: [budget_decomp]
 ---
 
 # 技能 · 性能分解 Budget

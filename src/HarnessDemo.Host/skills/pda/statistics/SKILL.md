@@ -1,6 +1,7 @@
 ---
 name: ovl-pda-statistics
 description: OVL 生产数据分析 - 数据统计。当用户询问 LOT 的 OVL 指标（X/Y 3σ、片内最大 3σ、TIS 3σ、超规告警）时使用。触发词："统计结果"、"这批 LOT"、"3σ"、"stats"。
+allowed-tools: [ovl_statistics]
 ---
 
 # 技能 · 数据统计

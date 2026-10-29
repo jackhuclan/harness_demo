@@ -18,6 +18,10 @@ using HarnessDemo.State;
 Env.TraversePath().Load();
 
 var builder = WebApplication.CreateBuilder(args);
+
+// 加载 skills/ 目录下所有 SKILL.md，构建 agent -> allowed-tools 映射
+var skillsRoot = Path.Combine(AppContext.BaseDirectory, "skills");
+builder.Services.AddSingleton(new HarnessDemo.Model.SkillCatalog(skillsRoot));
 builder.WebHost.UseUrls("http://localhost:5000");
 
 // --- 状态层 ---
@@ -162,6 +166,18 @@ app.MapGet("/agents", () => Results.Ok(
     HarnessDemo.Model.AgentRegistry.Agents.Select(a => new {
         name = a.Name, title = a.Title, description = a.Description, tools = a.Tools
     })));
+
+// 查看某 Agent 加载的技能及其 allowed-tools
+app.MapGet("/agents/{name}/skills", (string name, HarnessDemo.Model.SkillCatalog catalog) =>
+{
+    var skills = catalog.GetSkillsFor(name);
+    return Results.Ok(new
+    {
+        agent = name,
+        skills = skills.Select(s => new { name = s.Name, description = s.Description, allowedTools = s.AllowedTools }),
+        allowedTools = catalog.GetToolsFor(name)
+    });
+});
 
 // 流式对话：SSE (text/event-stream)，逐字返回模型输出
 app.MapPost("/chat/stream", async (ChatRequest req, Agent agent, HttpContext ctx) =>

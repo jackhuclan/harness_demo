@@ -1,6 +1,7 @@
 ---
 name: ovl-pda-anomaly
 description: OVL 生产数据分析 - 异常分析。当用户询问失败原因、为什么 fail、根因研判时使用。触发词："为什么 fail"、"异常"、"根因"、"Wafer 9"。
+allowed-tools: [ovl_anomaly]
 ---
 
 # 技能 · 异常分析

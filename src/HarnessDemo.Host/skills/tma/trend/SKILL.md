@@ -1,6 +1,7 @@
 ---
 name: ovl-tma-trend
 description: OVL 机台监测分析 - 近两月机台性能趋势。当用户询问近两个月机台性能走势、重复性趋势、spec 逼近判定时使用。触发词："近两个月"、"性能趋势"、"W1-W8"、"趋势图"。
+allowed-tools: [tool_trend]
 ---
 
 # 技能 · 近两月机台性能趋势

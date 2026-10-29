@@ -1,6 +1,7 @@
 ---
 name: ovl-tma-run
 description: OVL 机台监测分析 - 运行机台性能检测。当用户要求用 Recipe: Tool Performance 跑机台性能、加载硅片跑性能测试时使用。触发词："Foup1 slot2"、"Tool Performance"、"跑机台性能"、"运行监测"。
+allowed-tools: [tool_performance, wafer_load]
 ---
 
 # 技能 · 运行机台监测分析

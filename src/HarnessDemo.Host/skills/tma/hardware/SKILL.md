@@ -1,6 +1,7 @@
 ---
 name: ovl-tma-hardware
 description: OVL 机台监测分析 - 机台硬件状态分析（光源寿命预估）。当用户询问量测光源状态、亮度衰减、剩余寿命、PM 备件时使用。触发词："光源状态"、"量测光源"、"衰减"、"寿命预估"、"PM 备件"。
+allowed-tools: [hardware_health]
 ---
 
 # 技能 · 机台硬件状态分析

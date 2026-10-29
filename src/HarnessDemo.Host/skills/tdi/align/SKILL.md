@@ -1,6 +1,7 @@
 ---
 name: ovl-tdi-align
 description: OVL 机台诊断修复 - 精对准失败诊断。当用户询问机台为什么报错、精对准 Fine Alignment 失败、图形匹配失败时使用。触发词："为什么报错"、"精对准失败"、"Foup1 slot2"、"图形匹配"。
+allowed-tools: [ovl_diagnose, disposition_confirm]
 ---
 
 # 技能 · 精对准失败诊断

@@ -1,6 +1,7 @@
 ---
 name: ovl-recipe-analyze
 description: OVL 处方管理 - 处方分析。当用户要分析现有处方运行情况、失败归类、优化建议时使用。触发词："分析下这个处方"、"ProductA_M1M2_Layer"、"处方运行情况"。
+allowed-tools: [recipe_analyze]
 ---
 
 # 技能 · 处方分析

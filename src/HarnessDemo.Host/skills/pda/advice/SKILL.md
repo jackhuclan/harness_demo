@@ -1,6 +1,7 @@
 ---
 name: ovl-pda-advice
 description: OVL 生产数据分析 - 决策建议。当用户询问改进建议、怎么改进、工艺优化方向时使用。触发词："怎么改进"、"给个建议"、"改进方案"、"advice"。
+allowed-tools: [decision_advice]
 ---
 
 # 技能 · 决策建议

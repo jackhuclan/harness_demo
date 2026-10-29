@@ -1,6 +1,7 @@
 ---
 name: ovl-pda-attribution
 description: OVL 生产数据分析 - 归因分析。当用户询问 overlay 偏大根因、field-to-field 残差分析时使用。触发词："overlay 偏大"、"根因"、"归因"、"R²"。
+allowed-tools: [attribution]
 ---
 
 # 技能 · 归因分析

@@ -1,6 +1,7 @@
 ---
 name: ovl-recipe-create
 description: OVL 处方管理 - 处方建立及调试。当用户要新建 OVL 处方、建方、13 步流程时使用。触发词："建个处方"、"建方"、"Foup2 slot5"、"create recipe"。
+allowed-tools: [recipe_create, wafer_load]
 ---
 
 # 技能 · 处方建立及调试

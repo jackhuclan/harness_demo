@@ -1,6 +1,7 @@
 ---
 name: ovl-tdi-focus
 description: OVL 机台诊断修复 - 粗聚焦失败诊断。当用户询问粗聚焦为什么失败、Focus Travel 调整、Coarse Fail 时使用。触发词："粗聚焦失败"、"Foup3 slot7"、"Focus Travel"、"z 向搜索范围"。
+allowed-tools: [ovl_diagnose, disposition_confirm]
 ---
 
 # 技能 · 粗聚焦失败诊断
