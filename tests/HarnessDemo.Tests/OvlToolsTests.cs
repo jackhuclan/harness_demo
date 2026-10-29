@@ -116,4 +116,44 @@ public class OvlToolsTests
         var r = await tool.ExecuteAsync("{}", default);
         Assert.Contains("已习得", r);
     }
+
+    [Fact] // TC-PDA-007-01 多技能串联
+    public async Task MultiSkillChain_RunsAllStages()
+    {
+        var db = new OvlDataStore();
+        var tool = new MultiSkillChainTool(
+            new OvlStatisticsTool(db), new OvlAnomalyTool(db),
+            new BudgetDecompTool(), new AttributionTool(), new DecisionAdviceTool());
+        var r = await tool.ExecuteAsync("{}", default);
+        Assert.Contains("统计", r);
+        Assert.Contains("归因", r);
+        Assert.Contains("建议", r);
+    }
+
+    [Fact] // TC-TDI-002-01/02 介入确认后执行
+    public async Task DispositionConfirm_ReportsRecovery()
+    {
+        var tool = new DispositionConfirmTool();
+        var r = await tool.ExecuteAsync("{}", default);
+        Assert.Contains("执行完成", r);
+        Assert.Contains("恢复", r);
+    }
+
+    [Fact] // TC-MGT-001-01/02 13步建方
+    public async Task RecipeCreate_Shows13StepsAndPause()
+    {
+        var tool = new RecipeCreateTool();
+        var r = await tool.ExecuteAsync("{}", default);
+        Assert.Contains("13", r);
+        Assert.Contains("对准建模", r);
+        Assert.Contains("[REQUIRES_CONFIRM]", r);
+    }
+
+    [Fact] // TC-CSK-001-01 自定义技能习得
+    public async Task CustomSkillLearn_RegistersRule()
+    {
+        var tool = new CustomSkillLearnTool();
+        var r = await tool.ExecuteAsync("{\"rule\":\"动态采样规则\"}", default);
+        Assert.Contains("已习得", r);
+    }
 }

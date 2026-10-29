@@ -100,10 +100,12 @@ export default function ChatPage() {
 
   const suggestions = [
     "帮我看下 LOT-2207 的统计结果",
-    "为什么这批数据大多都是 fail？",
+    "看一下上午跑的数据怎么样（完整链路）",
     "分析下 ProductA_M1M2_Layer 这个处方",
+    "帮我给 Foup2 slot5 建个处方",
     "机台性能怎么样？",
     "看下粗聚焦失败怎么诊断",
+    "确认执行处置并复测",
     "光源还能用多久？",
   ];
 

@@ -69,6 +69,10 @@ builder.Services.AddSingleton<ITool, RecipeOptimizeTool>();
 builder.Services.AddSingleton<ITool, ToolTrendTool>();
 builder.Services.AddSingleton<ITool, HardwareHealthTool>();
 builder.Services.AddSingleton<ITool, ExperienceLearnTool>();
+builder.Services.AddSingleton<ITool, MultiSkillChainTool>();
+builder.Services.AddSingleton<ITool, DispositionConfirmTool>();
+builder.Services.AddSingleton<ITool, RecipeCreateTool>();
+builder.Services.AddSingleton<ITool, CustomSkillLearnTool>();
 
 // --- 会话与路由层 ---
 builder.Services.AddSingleton<Router>();

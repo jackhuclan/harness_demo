@@ -73,6 +73,14 @@ public sealed class RuleBasedLlmClient : ILlmClient
             return Task.FromResult(new LlmDecision(true, "hardware_health", "{}", null));
         if (Regex.IsMatch(lastUser, @"(经验|反馈|习得|learn)", RegexOptions.IgnoreCase))
             return Task.FromResult(new LlmDecision(true, "experience_learn", "{}", null));
+        if (Regex.IsMatch(lastUser, @"(怎么样|如何|分析一下这批|上午.*数据|完整.*链路)", RegexOptions.IgnoreCase))
+            return Task.FromResult(new LlmDecision(true, "ovl_chain", "{}", null));
+        if (Regex.IsMatch(lastUser, @"(确认|执行处置|复测|confirm)", RegexOptions.IgnoreCase))
+            return Task.FromResult(new LlmDecision(true, "disposition_confirm", "{}", null));
+        if (Regex.IsMatch(lastUser, @"(建方|建处方|创建处方|recipe.*create)", RegexOptions.IgnoreCase))
+            return Task.FromResult(new LlmDecision(true, "recipe_create", "{}", null));
+        if (Regex.IsMatch(lastUser, @"(自定义技能|习得规则|custom.*skill|动态采样)", RegexOptions.IgnoreCase))
+            return Task.FromResult(new LlmDecision(true, "custom_skill_learn", "{}", null));
 
         // 意图未匹配 -> 引导提示（FR-SYS-001 负例）
         var known = new[] { "统计 LOT", "为什么 fail", "分析处方", "机台性能", "诊断报错", "加载 Foup/slot" };
