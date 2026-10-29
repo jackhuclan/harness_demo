@@ -1,9 +1,0 @@
-{
-  "id": "pda_anomaly",
-  "name": "技能2 · 异常分析",
-  "agent": "pda",
-  "trigger": "看下刚才跑的数据为什么大多都是 fail",
-  "description": "失败范围定位 + 数据/图像/log 综合根因研判（Wafer 9 示例）。",
-  "tool": "ovl_anomaly",
-  "toolArgs": "{}"
-}

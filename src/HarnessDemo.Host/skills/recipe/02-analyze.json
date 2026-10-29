@@ -1,9 +1,0 @@
-{
-  "id": "recipe_analyze",
-  "name": "技能2 · 处方分析",
-  "agent": "recipe",
-  "trigger": "分析下 ProductA_M1M2_Layer 这个处方",
-  "description": "分析处方运行情况：基本信息（产品/层/标记/OVL Model/TIS 模式/机台）、近 30 天运行统计（Lot/Wafer 数、测点/硅片成功率）、测点失败原因归类（OVL/TIS/Qmerit/聚焦/对准）、优化建议。",
-  "tool": "recipe_analyze",
-  "toolArgs": "{}"
-}

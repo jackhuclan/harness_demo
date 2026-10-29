@@ -1,9 +1,0 @@
-{
-  "id": "pda_statistics",
-  "name": "技能1 · 数据统计",
-  "agent": "pda",
-  "trigger": "帮我看下这批 LOT 的统计结果",
-  "description": "统计 LOT 的 OVL 指标：X/Y 3σ、片内最大 3σ、TIS 3σ，超规告警。",
-  "tool": "ovl_statistics",
-  "toolArgs": "{}"
-}

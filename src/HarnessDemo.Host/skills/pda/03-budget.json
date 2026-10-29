@@ -1,9 +1,0 @@
-{
-  "id": "pda_budget",
-  "name": "技能3 · 性能分解 Budget",
-  "agent": "pda",
-  "trigger": "上午这批 Lot 的数据差异有多大？主要贡献项是什么？",
-  "description": "分解 Raw/W1F1/W3F3/CPE/Residual，识别最大贡献项。",
-  "tool": "budget_decomp",
-  "toolArgs": "{}"
-}
