@@ -6,5 +6,6 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\HarnessDemo.Abstractions\HarnessDemo.Abstractions.csproj" />
+    <ProjectReference Include="..\HarnessDemo.Model\HarnessDemo.Model.csproj" />
   </ItemGroup>
 </Project>

@@ -1,31 +1,70 @@
+using System.Text;
 using HarnessDemo.Abstractions;
+using HarnessDemo.Model;
 
 namespace HarnessDemo.AgentCore;
 
 /// <summary>
-/// 上下文管理器（对应架构图 Agent Core / Context 上下文管理）。
-/// 职责：上下文组装（System 提示词 + 历史）、动态压缩（只保留最近 N 条）、Token 预算控制。
+/// 上下文管理器。根据当前 Agent 渐进式加载系统提示词：
+/// 基础平台说明 + Agent 人设 + 该 Agent 的技能列表 + 允许的工具列表。
 /// </summary>
 public sealed class ContextManager
 {
     private const int MaxHistory = 10;
+    private readonly AgentRegistry _registry;
 
-    private static readonly string SystemPrompt =
-        "你是运行在 Agent Harness 平台上的智能体。平台分层：入口层 / 会话路由层 / " +
-        "Agent Core（Planner·Controller·Memory·Context）/ 能力层 / 执行层 / 状态层 / 模型层 / 安全层。" +
-        "需要外部能力时通过执行层 ToolExecutor 调用工具。";
-
-    public IReadOnlyList<ChatMessage> Build(IReadOnlyList<ChatMessage> history)
+    public ContextManager(AgentRegistry registry)
     {
-        var list = new List<ChatMessage> { new(Role.System, SystemPrompt) };
+        _registry = registry;
+    }
 
-        // 动态压缩：超出窗口只保留最近 MaxHistory 条（对应 Context 的动态压缩/Token 管理）
+    public IReadOnlyList<ChatMessage> Build(IReadOnlyList<ChatMessage> history, string? agentName = null)
+    {
+        var system = BuildSystemPrompt(agentName);
+        var list = new List<ChatMessage> { new(Role.System, system) };
+
         var recent = history.Count <= MaxHistory
             ? history
             : history.TakeLast(MaxHistory).ToList();
         list.AddRange(recent);
 
-        Console.WriteLine($"[AgentCore/Context] 组装上下文 {list.Count} 条（历史 {history.Count} 条，压缩窗口 {MaxHistory}）");
+        Console.WriteLine($"[AgentCore/Context] 组装上下文 {list.Count} 条（agent={agentName ?? "default"}，历史 {history.Count} 条）");
         return list;
+    }
+
+    private string BuildSystemPrompt(string? agentName)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("你是运行在 Agent Harness 平台上的智能体。");
+
+        if (string.IsNullOrEmpty(agentName))
+        {
+            sb.AppendLine("当前未指定具体 Agent，请引导用户选择或介绍系统能力。");
+            return sb.ToString();
+        }
+
+        var agent = _registry.Get(agentName);
+        sb.AppendLine();
+        sb.AppendLine($"## 当前智能体：{agent.Title}");
+        sb.AppendLine(agent.SystemPrompt);
+
+        if (agent.Skills.Length > 0)
+        {
+            sb.AppendLine();
+            sb.AppendLine("### 可用技能");
+            foreach (var s in agent.Skills)
+            {
+                sb.AppendLine($"- **{s.Name}**：{s.Description}");
+            }
+        }
+
+        if (agent.Tools.Length > 0)
+        {
+            sb.AppendLine();
+            sb.AppendLine("### 可调用工具");
+            sb.AppendLine(string.Join(", ", agent.Tools));
+        }
+
+        return sb.ToString();
     }
 }

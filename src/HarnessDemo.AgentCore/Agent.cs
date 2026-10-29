@@ -46,14 +46,16 @@ public sealed class Agent
         session.Messages.Add(new ChatMessage(Role.User, userInput));
 
         var finalAnswer = "(模型未给出最终答复)";
+        string? currentAgent = null;
 
         // 3. Controller 执行循环：Planner 决策 -> 工具执行 -> 结果回灌
         for (var hop = 1; hop <= MaxHops; hop++)
         {
             Console.WriteLine($"[AgentCore/Controller] --- 第 {hop} 轮决策 ---");
 
-            var context = _context.Build(session.Messages);
+            var context = _context.Build(session.Messages, currentAgent);
             var decision = await _llm.DecideAsync(context, _executor.RegisteredTools, ct);
+            if (decision.AgentName != null) currentAgent = decision.AgentName;
 
             if (decision.NeedsTool && decision.ToolName is not null)
             {
@@ -99,11 +101,16 @@ public sealed class Agent
         session.Messages.Add(new ChatMessage(Role.User, userInput));
 
         var sb = new System.Text.StringBuilder();
+        string? currentAgent = null;
 
         for (var hop = 1; hop <= MaxHops; hop++)
         {
             Console.WriteLine($"[AgentCore/Controller] --- 流式第 {hop} 轮决策 ---");
-            var context = _context.Build(session.Messages);
+            var context = _context.Build(session.Messages, currentAgent);
+
+            // 先同步决策拿到 agent 名和工具选择
+            var decision = await _llm.DecideAsync(context, _executor.RegisteredTools, ct);
+            if (decision.AgentName != null) currentAgent = decision.AgentName;
 
             string? pendingTool = null;
             string? pendingArgs = null;
