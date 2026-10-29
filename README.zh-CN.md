@@ -73,7 +73,7 @@ cd harness_demo
 dotnet run --project src/HarnessDemo.Host
 ```
 
-API 监听 `http://localhost:5000`，端点如下：
+API 监听 `http://localhost:5000`，交互式文档（Swagger UI）在 **`/swagger`**。
 
 | 方法 | 路径 | 用途 |
 |---|---|---|

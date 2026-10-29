@@ -73,7 +73,7 @@ cd harness_demo
 dotnet run --project src/HarnessDemo.Host
 ```
 
-The API listens on `http://localhost:5000`. Endpoints:
+The API listens on `http://localhost:5000`. Interactive API docs (Swagger UI) are at **`/swagger`**.
 
 | Method | Path | Purpose |
 |---|---|---|

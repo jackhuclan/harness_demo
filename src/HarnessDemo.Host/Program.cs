@@ -57,7 +57,19 @@ builder.Services.AddSingleton<ITool, TimeTool>();
 builder.Services.AddSingleton<Router>();
 builder.Services.AddSingleton<SessionManager>();
 
+// --- Swagger / OpenAPI 文档 ---
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
 var app = builder.Build();
+
+// Swagger 中间件：暴露 /swagger/v1/swagger.json 和 /swagger UI
+app.UseSwagger();
+app.UseSwaggerUI(c =>
+{
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Agent Harness API v1");
+    c.RoutePrefix = "swagger";
+});
 
 // 把 DI 注册的能力层插件登记进执行层注册表
 var executor = app.Services.GetRequiredService<ToolExecutor>();
@@ -70,6 +82,7 @@ foreach (var tool in app.Services.GetServices<ITool>())
 app.MapGet("/", () => Results.Ok(new
 {
     name = "Agent Harness API",
+    swagger = "/swagger",
     endpoints = new[] { "POST /chat", "GET /tools", "GET /sessions/{sessionId}" }
 }));
 
