@@ -1,3 +1,4 @@
+using DotNetEnv;
 using HarnessDemo.Abstractions;
 using HarnessDemo.AgentCore;
 using HarnessDemo.Execution;
@@ -10,8 +11,11 @@ using HarnessDemo.State;
 // =====================================================================
 // Agent Harness Demo —— 入口层：ASP.NET Core Web API
 // 对应架构图「入口层 / API 开放接口」。
-// 用内置 DI 把各分层装配起来；后续可平滑替换为 Bot / Web / Voice 入口。
+// 模型配置从 .env 读取（DotNetEnv）：USE_REAL_LLM=true 走真实大模型，false 走内置规则模拟。
 // =====================================================================
+
+// 加载仓库根目录 .env（向上逐级查找）
+Env.TraversePath().Load();
 
 var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.UseUrls("http://localhost:5000");
@@ -21,8 +25,24 @@ builder.Services.AddSingleton<ISessionStore, InMemorySessionStore>();
 builder.Services.AddSingleton<IMemoryStore, InMemoryMemoryStore>();
 builder.Services.AddSingleton<ITaskStore, InMemoryTaskStore>();
 
-// --- 模型层 / 安全层 / Agent Core ---
-builder.Services.AddSingleton<ILlmClient, RuleBasedLlmClient>();
+// --- 模型层：按配置选择真实大模型 or 规则模拟 ---
+var useRealLlm = Environment.GetEnvironmentVariable("USE_REAL_LLM")?.Equals("true", StringComparison.OrdinalIgnoreCase) == true;
+if (useRealLlm)
+{
+    var endpoint = Environment.GetEnvironmentVariable("LLM_ENDPOINT") ?? "http://localhost:3001/v1";
+    var apiKey = Environment.GetEnvironmentVariable("LLM_API_KEY") ?? "";
+    var model = Environment.GetEnvironmentVariable("LLM_MODEL") ?? "deepseek-v4.1-flash";
+    var maxTokens = int.TryParse(Environment.GetEnvironmentVariable("LLM_MAX_TOKENS"), out var t) ? t : 4096;
+    Console.WriteLine($"[Host] 使用真实大模型：{model} @ {endpoint}");
+    builder.Services.AddSingleton<ILlmClient>(_ => new OpenAiLlmClient(endpoint, apiKey, model, maxTokens));
+}
+else
+{
+    Console.WriteLine("[Host] 使用内置规则模拟 LLM（离线模式）");
+    builder.Services.AddSingleton<ILlmClient, RuleBasedLlmClient>();
+}
+
+// --- 安全层 / Agent Core ---
 builder.Services.AddSingleton<IContentAuditor, SensitiveWordAuditor>();
 builder.Services.AddSingleton<ContextManager>();
 builder.Services.AddSingleton<Agent>();

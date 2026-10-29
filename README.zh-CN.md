@@ -100,6 +100,25 @@ curl -X POST http://localhost:5000/chat -H "Content-Type: application/json" `
 
 同一个 `sessionId` 会保留多轮上下文（由 `SessionStore` 维护）。
 
+## 配置（`.env`）
+
+把 `.env.example` 复制为 `.env` 并填入你的大模型端点（该文件已被 gitignore，请勿提交真实密钥）：
+
+```env
+LLM_ENDPOINT=http://your-local-llm-host/v1
+LLM_API_KEY=sk-your-key
+LLM_MODEL=your-model-name
+LLM_MAX_TOKENS=4096
+USE_REAL_LLM=true        # false -> 内置规则模拟（离线演示）
+```
+
+Host 启动时通过 `DotNetEnv` 读取 `.env`。`USE_REAL_LLM=true` 时装配真实 OpenAI 兼容客户端（`OpenAiLlmClient`，基于 OpenAI SDK v2.x）；`false` 时回退到离线的 `RuleBasedLlmClient`。可对接任何 OpenAI 兼容端点（本地 vLLM / Ollama / OpenAI / Azure / 通义 / 文心）。
+
+| 包 | 用途 |
+|---|---|
+| `OpenAI` 2.14.0 | 调本地端点的 chat completions + function calling |
+| `DotNetEnv` 3.2.0 | 启动时读取 `.env` |
+
 ## 扩展方式
 
 - **接真实大模型** —— 实现 `ILlmClient.DecideAsync`，内部调用 OpenAI / Azure OpenAI / 通义 / 文心的 function calling，每步返回 `LlmDecision`，其他层无需改动。

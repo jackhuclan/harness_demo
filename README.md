@@ -100,6 +100,25 @@ curl -X POST http://localhost:5000/chat -H "Content-Type: application/json" `
 
 Reusing the same `sessionId` keeps multi-turn context (maintained by `SessionStore`).
 
+## Configuration (`.env`)
+
+Copy `.env.example` to `.env` and fill in your LLM endpoint (the file is gitignored — never commit real keys):
+
+```env
+LLM_ENDPOINT=http://your-local-llm-host/v1
+LLM_API_KEY=sk-your-key
+LLM_MODEL=your-model-name
+LLM_MAX_TOKENS=4096
+USE_REAL_LLM=true        # false -> built-in rule-based mock (offline demo)
+```
+
+The Host loads `.env` on startup via `DotNetEnv`. Set `USE_REAL_LLM=true` to wire the real OpenAI-compatible client (`OpenAiLlmClient`, OpenAI SDK v2.x); `false` falls back to the offline `RuleBasedLlmClient`. Works with any OpenAI-compatible endpoint (local vLLM, Ollama, OpenAI, Azure, Tongyi, Wenxin).
+
+| Package | Purpose |
+|---|---|
+| `OpenAI` 2.14.0 | Chat completions + function calling against the local endpoint |
+| `DotNetEnv` 3.2.0 | Load `.env` at startup |
+
 ## Extending the harness
 
 - **Wire a real LLM** — implement `ILlmClient.DecideAsync` on top of OpenAI / Azure OpenAI / Tongyi / Wenxin function-calling; return `LlmDecision` per step. No other layer changes.
