@@ -8,7 +8,8 @@ public sealed record LlmDecision(
     bool NeedsTool,
     string? ToolName,
     string? ToolArgsJson,
-    string? FinalText);
+    string? FinalText,
+    string? AgentName = null);
 
 /// <summary>流式输出事件：文本增量 或 最终决策（工具调用/结束）。</summary>
 public abstract record StreamEvent;

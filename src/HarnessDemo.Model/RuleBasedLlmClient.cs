@@ -4,121 +4,116 @@ using HarnessDemo.Abstractions;
 namespace HarnessDemo.Model;
 
 /// <summary>
-/// 模型层：规则模拟的 LLM 客户端（对应架构图「大语言模型 / GPT·Claude·文心」）。
-/// 生产环境替换为 OpenAI / 通义 / 文心 SDK 即可，接口不变。
-/// 它扮演 Planner：阅读上下文，决定是「调用工具」还是「直接回答」。
+/// 模型层：规则模拟的 Planner。两阶段决策：
+/// 1) 先路由到哪个 Agent（recipe / pda / tma / tdi / intro）
+/// 2) 再在该 Agent 的工具子集里选具体工具
 /// </summary>
 public sealed class RuleBasedLlmClient : ILlmClient
 {
+    // 第一阶段：关键词 -> Agent
+    private static (string pattern, string agent)[] AgentRoutes = new[]
+    {
+        (@"(建方|建处方|创建处方|recipe.*create|load.*foup|加载.*硅片|wafer.*load|处方建立)", "recipe"),
+        (@"(分析.*处方|处方.*分析|recipe.*analy|优化处方|recipe.*optim)", "recipe"),
+        (@"(统计|stats|3σ|lot.*批|异常|fail|分解|budget|归因|attribution|建议|advice|补偿|compensat|R2R|链路|chain)", "pda"),
+        (@"(性能|tool performance|重复性|趋势|trend|光源|硬件|寿命|衰减)", "tma"),
+        (@"(诊断|报错|error|focus|聚焦|对准|处置|复测|经验|反馈|learn)", "tdi"),
+    };
+
+    // 第二阶段：Agent -> 该 Agent 内的工具选择
+    private static Dictionary<string, (string pattern, string tool, string args)[]> ToolRoutes = new()
+    {
+        ["recipe"] = new[]
+        {
+            (@"(建方|建处方|创建处方|recipe.*create)", "recipe_create", "{}"),
+            (@"(load|加载|foup|slot|上片|wafer.*load)", "wafer_load", "{\"foup\":\"Foup2\",\"slot\":5}"),
+            (@"(优化|optimize|MRO|self-calibration)", "recipe_optimize", "{}"),
+            (@"(自定义技能|习得规则|custom.*skill|动态采样)", "custom_skill_learn", "{}"),
+            (@"(分析.*处方|处方.*分析|recipe.*analy)", "recipe_analyze", "{}"),
+        },
+        ["pda"] = new[]
+        {
+            (@"(统计|stats|3σ)", "ovl_statistics", "{}"),
+            (@"(异常|fail|根因|为什么.*fail)", "ovl_anomaly", "{}"),
+            (@"(分解|budget|贡献项)", "budget_decomp", "{}"),
+            (@"(归因|attribution|边缘|field-to-field)", "attribution", "{}"),
+            (@"(建议|改进|advice)", "decision_advice", "{}"),
+            (@"(补偿|compensat|R2R|下发)", "r2r_comp", "{}"),
+            (@"(链路|chain|完整|怎么样|如何)", "ovl_chain", "{}"),
+        },
+        ["tma"] = new[]
+        {
+            (@"(趋势|trend|近.*周|近.*月)", "tool_trend", "{}"),
+            (@"(光源|硬件|寿命|衰减|PM)", "hardware_health", "{}"),
+            (@"(性能|tool performance|重复性|MAM|TIS)", "tool_performance", "{}"),
+        },
+        ["tdi"] = new[]
+        {
+            (@"(确认|执行处置|复测|confirm)", "disposition_confirm", "{}"),
+            (@"(经验|反馈|习得|learn)", "experience_learn", "{}"),
+            (@"(诊断|报错|error|focus|聚焦|对准)", "ovl_diagnose", "{\"error\":\"粗聚焦失败\"}"),
+        },
+        ["intro"] = Array.Empty<(string, string, string)>(),
+    };
+
     public Task<LlmDecision> DecideAsync(
         IReadOnlyList<ChatMessage> context,
         IReadOnlyList<ITool> availableTools,
         CancellationToken ct)
     {
-        // 闭环信号：上一条消息是工具结果 -> 不再调用工具，直接把结果整理为最终答复
-        // （真实 function calling 中，LLM 看到 tool message 后自然停止发起新调用）
+        // 闭环：上一条是工具结果 -> 直接整理为最终答复
         var last = context[^1];
         if (last.Role == Role.Tool)
         {
-            Console.WriteLine("[Model/Planner] 已收到工具结果，结束工具循环，生成最终答复");
+            Console.WriteLine("[Model/Planner] 工具结果回灌，结束循环");
             return Task.FromResult(new LlmDecision(false, null, null, $"[工具结果] {last.Content}"));
         }
 
         var lastUser = context.LastOrDefault(m => m.Role == Role.User)?.Content ?? "";
 
-        // --- OVL Agent 意图路由（FR-SYS-001）---
-        if (Regex.IsMatch(lastUser, @"(统计|stats|3σ|lot).*(lot|LOT|批)", RegexOptions.IgnoreCase))
+        // 第一阶段：选 Agent
+        var agent = "intro";
+        foreach (var (pat, ag) in AgentRoutes)
         {
-            Console.WriteLine("[Model/Planner] 识别为 OVL 数据统计意图 -> ovl_statistics");
-            return Task.FromResult(new LlmDecision(true, "ovl_statistics", "{}", null));
+            if (Regex.IsMatch(lastUser, pat, RegexOptions.IgnoreCase)) { agent = ag; break; }
         }
-        if (Regex.IsMatch(lastUser, @"(fail|失败|异常|根因|为什么.*fail)", RegexOptions.IgnoreCase))
-        {
-            Console.WriteLine("[Model/Planner] 识别为 OVL 异常分析意图 -> ovl_anomaly");
-            return Task.FromResult(new LlmDecision(true, "ovl_anomaly", "{}", null));
-        }
-        if (Regex.IsMatch(lastUser, @"(分析.*处方|处方.*分析|recipe.*analy)", RegexOptions.IgnoreCase))
-        {
-            Console.WriteLine("[Model/Planner] 识别为处方分析意图 -> recipe_analyze");
-            return Task.FromResult(new LlmDecision(true, "recipe_analyze", "{}", null));
-        }
-        if (Regex.IsMatch(lastUser, @"(性能|tool performance|重复性|MAM|TIS)", RegexOptions.IgnoreCase))
-        {
-            Console.WriteLine("[Model/Planner] 识别为机台性能检测意图 -> tool_performance");
-            return Task.FromResult(new LlmDecision(true, "tool_performance", "{}", null));
-        }
-        if (Regex.IsMatch(lastUser, @"(诊断|报错|error|focus|聚焦|对准)", RegexOptions.IgnoreCase))
-        {
-            Console.WriteLine("[Model/Planner] 识别为机台诊断意图 -> ovl_diagnose");
-            return Task.FromResult(new LlmDecision(true, "ovl_diagnose", "{\"error\":\"粗聚焦失败\"}", null));
-        }
-        if (Regex.IsMatch(lastUser, @"(load|加载|foup|slot|上片)", RegexOptions.IgnoreCase))
-        {
-            Console.WriteLine("[Model/Planner] 识别为硅片加载意图 -> wafer_load");
-            return Task.FromResult(new LlmDecision(true, "wafer_load", "{\"foup\":\"Foup2\",\"slot\":5}", null));
-        }
-        if (Regex.IsMatch(lastUser, @"(分解|budget|贡献项)", RegexOptions.IgnoreCase))
-            return Task.FromResult(new LlmDecision(true, "budget_decomp", "{}", null));
-        if (Regex.IsMatch(lastUser, @"(归因|attribution|field-to-field|边缘)", RegexOptions.IgnoreCase))
-            return Task.FromResult(new LlmDecision(true, "attribution", "{}", null));
-        if (Regex.IsMatch(lastUser, @"(建议|改进|advice)", RegexOptions.IgnoreCase))
-            return Task.FromResult(new LlmDecision(true, "decision_advice", "{}", null));
-        if (Regex.IsMatch(lastUser, @"(补偿|compensat|R2R|下发)", RegexOptions.IgnoreCase))
-            return Task.FromResult(new LlmDecision(true, "r2r_comp", "{}", null));
-        if (Regex.IsMatch(lastUser, @"(优化|optimize|self-calibration|MRO)", RegexOptions.IgnoreCase))
-            return Task.FromResult(new LlmDecision(true, "recipe_optimize", "{}", null));
-        if (Regex.IsMatch(lastUser, @"(趋势|trend|近.*周|近.*月)", RegexOptions.IgnoreCase))
-            return Task.FromResult(new LlmDecision(true, "tool_trend", "{}", null));
-        if (Regex.IsMatch(lastUser, @"(光源|硬件|寿命|衰减|PM)", RegexOptions.IgnoreCase))
-            return Task.FromResult(new LlmDecision(true, "hardware_health", "{}", null));
-        if (Regex.IsMatch(lastUser, @"(经验|反馈|习得|learn)", RegexOptions.IgnoreCase))
-            return Task.FromResult(new LlmDecision(true, "experience_learn", "{}", null));
-        if (Regex.IsMatch(lastUser, @"(怎么样|如何|分析一下这批|上午.*数据|完整.*链路)", RegexOptions.IgnoreCase))
-            return Task.FromResult(new LlmDecision(true, "ovl_chain", "{}", null));
-        if (Regex.IsMatch(lastUser, @"(确认|执行处置|复测|confirm)", RegexOptions.IgnoreCase))
-            return Task.FromResult(new LlmDecision(true, "disposition_confirm", "{}", null));
-        if (Regex.IsMatch(lastUser, @"(建方|建处方|创建处方|recipe.*create)", RegexOptions.IgnoreCase))
-            return Task.FromResult(new LlmDecision(true, "recipe_create", "{}", null));
-        if (Regex.IsMatch(lastUser, @"(自定义技能|习得规则|custom.*skill|动态采样)", RegexOptions.IgnoreCase))
-            return Task.FromResult(new LlmDecision(true, "custom_skill_learn", "{}", null));
+        Console.WriteLine($"[Model/Planner] 路由到 Agent: {agent}");
 
-        // 意图未匹配 -> 引导提示（FR-SYS-001 负例）
-        var known = new[] { "统计 LOT", "为什么 fail", "分析处方", "机台性能", "诊断报错", "加载 Foup/slot" };
-        if (lastUser.Length > 0 && !Regex.IsMatch(lastUser, @"你好|介绍|hello|hi", RegexOptions.IgnoreCase))
+        // 第二阶段：在该 Agent 的工具集里选
+        if (ToolRoutes.TryGetValue(agent, out var routes))
         {
-            return Task.FromResult(new LlmDecision(false, null, null,
-                $"未识别到明确意图。你可以试试：\n- {string.Join("\n- ", known)}"));
+            foreach (var (pat, tool, args) in routes)
+            {
+                if (Regex.IsMatch(lastUser, pat, RegexOptions.IgnoreCase))
+                {
+                    Console.WriteLine($"[Model/Planner] -> {agent}/{tool}");
+                    return Task.FromResult(new LlmDecision(true, tool, args, null, agent));
+                }
+            }
         }
 
-        // 意图 1：算术计算 -> 调用 calculator 工具
-        var calc = Regex.Match(
-            lastUser,
-            @"(?:计算|calculate|calc)\s*[:：]?\s*(?<expr>[\d+\-*/().\s]+)",
-            RegexOptions.IgnoreCase);
+        // intro Agent 或未匹配 -> 直接回复
+        if (Regex.IsMatch(lastUser, @"你好|介绍|hello|hi|你是谁", RegexOptions.IgnoreCase))
+        {
+            var intro = "我是 OVL Agent Harness，覆盖 5 个智能体：\n" +
+                "- 处方管理：建方、加载硅片、处方分析、优化\n" +
+                "- 生产数据分析：统计、异常、误差分解、归因、R2R\n" +
+                "- 机台监测分析：性能、趋势、硬件健康\n" +
+                "- 机台诊断修复：报错诊断、处置、经验学习\n" +
+                "试试：「分析下 ProductA_M1M2_Layer 这个处方」";
+            return Task.FromResult(new LlmDecision(false, null, null, intro, "intro"));
+        }
+
+        // 兜底：计算/时间
+        var calc = Regex.Match(lastUser, @"(?:计算|calc)\s*[:：]?\s*(?<expr>[\d+\-*/().\s]+)", RegexOptions.IgnoreCase);
         if (calc.Success)
-        {
-            var expr = calc.Groups["expr"].Value.Trim();
-            Console.WriteLine($"[Model/Planner] 识别为计算意图 -> 调用工具 calculator(\"{expr}\")");
-            return Task.FromResult(new LlmDecision(
-                true, "calculator",
-                System.Text.Json.JsonSerializer.Serialize(new { expression = expr }),
-                null));
-        }
-
-        // 意图 2：时间查询 -> 调用 get_time 工具
+            return Task.FromResult(new LlmDecision(true, "calculator",
+                System.Text.Json.JsonSerializer.Serialize(new { expression = calc.Groups["expr"].Value.Trim() }), null, "intro"));
         if (Regex.IsMatch(lastUser, @"(几点|现在.*时间|time|now)", RegexOptions.IgnoreCase))
-        {
-            Console.WriteLine("[Model/Planner] 识别为时间意图 -> 调用工具 get_time()");
-            return Task.FromResult(new LlmDecision(true, "get_time", "{}", null));
-        }
+            return Task.FromResult(new LlmDecision(true, "get_time", "{}", null, "intro"));
 
-        // 意图 3：兜底 -> 直接生成最终答复
-        var tail = string.IsNullOrEmpty(lastUser) ? "（历史消息已超出压缩窗口）" : $"「{lastUser}」";
-        var reply =
-            $"[Mock-LLM] 已收到你的消息{tail}。当前上下文 {context.Count} 条，" +
-            $"可用工具 {availableTools.Count} 个。我是运行在 Agent Harness 上的智能体。";
-        Console.WriteLine("[Model/Planner] 无需工具，直接生成最终答复");
-        return Task.FromResult(new LlmDecision(false, null, null, reply));
+        return Task.FromResult(new LlmDecision(false, null, null,
+            $"[Agent:{agent}] 我已收到你的消息，请描述你想做的操作（建方/分析/诊断/监测等）。", agent));
     }
 
     public async IAsyncEnumerable<StreamEvent> StreamDecideAsync(
@@ -132,7 +127,6 @@ public sealed class RuleBasedLlmClient : ILlmClient
             yield return new StreamDone(true, d.ToolName, d.ToolArgsJson);
             yield break;
         }
-        // 模拟逐字输出
         var text = d.FinalText ?? "";
         for (var i = 0; i < text.Length; i += 3)
         {

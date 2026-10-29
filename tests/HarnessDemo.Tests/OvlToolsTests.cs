@@ -32,8 +32,8 @@ public class OvlToolsTests
         var tool = new RecipeAnalyzeTool(_db);
         var r = await tool.ExecuteAsync("{}", default);
         Assert.Contains("基本信息", r);
-        Assert.Contains("运行统计", r);
-        Assert.Contains("失败归类", r);
+        Assert.Contains("处方运行情况", r);
+        Assert.Contains("失败原因归类", r);
         Assert.Contains("优化建议", r);
     }
 

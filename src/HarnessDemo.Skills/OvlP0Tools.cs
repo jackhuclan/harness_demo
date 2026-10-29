@@ -46,27 +46,28 @@ public sealed class RecipeAnalyzeTool : ITool
         var run = _db.RecipeRunStats;
         var fail = _db.RecipeFailBreakdown;
         return Task.FromResult(
-            $"## 处方分析：ProductA_M1M2_Layer\n\n" +
-            $"### 1. 基本信息\n" +
-            $"- 产品/层: {info.product} / {info.layer}\n" +
-            $"- 标记: {info.mark}\n" +
-            $"- OVL Model: {info.ovlModel}\n" +
-            $"- TIS 模式: {info.tisMode}\n" +
-            $"- 所属机台: {info.tool}\n" +
-            $"- 创建时间: {info.created}\n\n" +
-            $"### 2. 近 30 天运行统计\n" +
-            $"- 已量测: {run.lots} Lot / {run.wafers} Wafer\n" +
-            $"- 测点成功率: {run.pointRate}%\n" +
-            $"- 硅片成功率: {run.waferRate}%\n\n" +
-            $"### 3. 测点失败归类\n" +
-            $"- OVL 超限: {fail.ovl}\n" +
-            $"- TIS 超限: {fail.tis}\n" +
-            $"- Qmerit 超限: {fail.qmerit}\n" +
-            $"- 聚焦失败: {fail.focus}\n" +
-            $"- 对准失败: {fail.align}\n\n" +
-            $"### 4. 优化建议\n" +
-            $"- OVL 超限占比最高，建议检查 TIS 模式是否需要切换为 Manual\n" +
-            $"- 建议开启 Auto Retrain Test，提升模型鲁棒性");
+            $"## 🟢 OVL Agent · 已自动路由：处方分析\n\n" +
+            $"识别意图：分析处方 **ProductA_M1M2_Layer** 的运行情况。正在拉取该处方的量测记录与配置…\n\n" +
+            $"### 📋 处方基本信息概况\n\n" +
+            $"| | |\n|---|---|\n" +
+            $"| 产品/层 | ProductA · M1M2 · Layer（套刻层） |\n" +
+            $"| 标记类型 | BIB 标记 ｜ OVL Model: linear |\n" +
+            $"| TIS 模式 | All Wafer ｜ Auto Retrain Test: 关闭 |\n" +
+            $"| 所属机台 | OM800 ｜ 创建于: 2026-03-12 |\n\n" +
+            $"### 📊 处方运行情况（近 30 天）\n\n" +
+            $"- 已量测：**42 Lot ｜ 980 Wafer**\n" +
+            $"- 测点成功率：**99.9%**（失败点 100 / 总 98,000）\n" +
+            $"- 硅片成功率：**99.8%**（失败 2 / 成功 978）\n\n" +
+            $"### 🔍 测点失败原因归类统计\n\n" +
+            $"| 原因 | 次数 | 占比 |\n|---|---|---|\n" +
+            $"| OVL 超限 | 38 | 38.0% |\n" +
+            $"| TIS 超限 | 20 | 20.0% |\n" +
+            $"| Qmerit 超限 | 18 | 18.0% |\n" +
+            $"| 聚焦失败 | 14 | 14.0% |\n" +
+            $"| 对准失败 | 10 | 10.0% |\n\n" +
+            $"### 💡 优化建议（Agent 推荐）\n\n" +
+            $"① Lot 间不同 wafer TIS 差异普遍较小（约 0.5 nm）→ 建议将 **TIS 模式改为 First Wafer**，可省去每片 TIS 量测，提升产率。\n\n" +
+            $"② 不同 Lot 间亮度及 Focus offset 差异较大 → 建议开启 **Auto Retrain Test**，自动重训以应对跨 Lot 漂移。");
     }
 }
 
