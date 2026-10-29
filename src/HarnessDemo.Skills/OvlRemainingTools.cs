@@ -63,25 +63,55 @@ public sealed class RecipeCreateTool : ITool
     public string Name => "recipe_create";
     public string Description => "引导 13 步建方流程，关键步骤自动暂停等待用户确认。入参 {foup, slot}。";
 
-    public Task<string> ExecuteAsync(string argsJson, CancellationToken ct) => Task.FromResult(
-        "## 处方建立及调试（13 步流程）\n\n" +
-        "| 步骤 | 环节 | 关键/介入 |\n" +
-        "|---|---|---|\n" +
-        "| 1 | 输入 WaferMap 参数 | |\n" +
-        "| 2 | 对准建模（coarse→fine→LLC） | ⏸ 关键·待确认 |\n" +
-        "| 3 | 创建 Test（设置 Target） | ⏸ 关键·待确认 |\n" +
-        "| 4 | 训练 Test | ⏸ 关键·待确认 |\n" +
-        "| 5 | 设置物理参数（SG/DG/Focus/WLI/Model） | ⏸ 关键·待确认 |\n" +
-        "| 6 | 自动选取量测 Field | 可介入 |\n" +
-        "| 7 | 自动设置 Data culling | 可介入 |\n" +
-        "| 8 | 自动设置 TIS Optimization | 可介入 |\n" +
-        "| 9 | 处方创建完毕 | |\n" +
-        "| 10 | 处方性能确认 | ⏸ 关键 |\n" +
-        "| 11 | 调用量测流程执行性能测试 | 可介入 |\n" +
-        "| 12 | 自动分析量测性能 | |\n" +
-        "| 13 | 性能判断与收尾（达标保存/不达标优化） | ⏸ 关键 |\n\n" +
-        "**性能指标（示例）**：重复性 3σ 0.42 nm / TIS 0.18 nm / 模型残差 0.31 nm（均 Pass，spec < 0.6 nm）\n\n" +
-        "[REQUIRES_CONFIRM] 步骤 2 对准建模已暂停，请确认或介入参数。");
+    public Task<string> ExecuteAsync(string argsJson, CancellationToken ct)
+    {
+        var foup = "Foup2";
+        var slot = "slot5";
+        // 尝试解析入参
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(argsJson ?? "{}");
+            var root = doc.RootElement;
+            if (root.TryGetProperty("foup", out var f) && f.ValueKind == System.Text.Json.JsonValueKind.String)
+                foup = f.GetString() ?? foup;
+            if (root.TryGetProperty("slot", out var s) && s.ValueKind == System.Text.Json.JsonValueKind.String)
+                slot = s.GetString() ?? slot;
+        }
+        catch { /* ignore */ }
+
+        return Task.FromResult(
+            $"## 🎯 意图识别与路由\n\n" +
+            $"- **已识别意图**：建立及调试处方（Recipe Co-pilot）\n" +
+            $"- **目标对象**：{foup} 的 {slot} 对应硅片（将自动调度机台从 {foup} 加载，无需人工上下片）\n" +
+            $"- **当前可用能力**：①处方建立及调试 ②处方运行分析 ③生产数据分析 ④机台检测分析 ⑤机台诊断修复\n" +
+            $"- **已自动路由至「建立及调试处方」**，流程共 13 步，关键步骤需您确认或介入。\n\n" +
+            $"## ⚙️ 机台调度 · 自动加载硅片\n\n" +
+            $"Agent 已向量测机台下指令，自动加载 {foup} 的 {slot} 对应的硅片：\n\n" +
+            $"- ● 读取硅片 ID 与晶圆规格 — **已读取**\n" +
+            $"- ● 指令下发 LOAD {foup.ToUpper()}:{slot.ToUpper()}[5] — **已确认**\n" +
+            $"- ● 机械手定位并拾取 {foup}·{slot} 硅片 — **完成**\n" +
+            $"- ● 硅片传送至量测卡盘 — **完成**\n" +
+            $"- ● 卡盘真空吸附 / 对心 — **完成**\n\n" +
+            $"✅ **{foup} · {slot} → 硅片 W0005 已装载 · 晶圆 300 mm 已识别**\n\n" +
+            $"硅片就绪，进入处方建立流程 ▶\n\n" +
+            $"## 📋 13 步建方流程\n\n" +
+            $"| 步骤 | 环节 | 状态 |\n|---|---|---|\n" +
+            $"| 1 | 输入 WaferMap 参数 | ✅ |\n" +
+            $"| 2 | 对准建模（coarse→fine→LLC） | ⏸ 待确认 |\n" +
+            $"| 3 | 创建 Test（设置 Target） | ⏸ 待确认 |\n" +
+            $"| 4 | 训练 Test | ⏸ 待确认 |\n" +
+            $"| 5 | 设置物理参数（SG/DG/Focus/WLI/Model） | ⏸ 待确认 |\n" +
+            $"| 6 | 自动选取量测 Field | 可介入 |\n" +
+            $"| 7 | 自动设置 Data culling | 可介入 |\n" +
+            $"| 8 | 自动设置 TIS Optimization | 可介入 |\n" +
+            $"| 9 | 处方创建完毕 | |\n" +
+            $"| 10 | 处方性能确认 | ⏸ 关键 |\n" +
+            $"| 11 | 调用量测流程执行性能测试 | 可介入 |\n" +
+            $"| 12 | 自动分析量测性能 | |\n" +
+            $"| 13 | 性能判断与收尾（达标保存/不达标优化） | ⏸ 关键 |\n\n" +
+            $"**性能指标（示例）**：重复性 3σ 0.42 nm / TIS 0.18 nm / 模型残差 0.31 nm（均 Pass，spec < 0.6 nm）\n\n" +
+            $"[REQUIRES_CONFIRM] 步骤 2 对准建模已暂停，请确认或介入参数。");
+    }
 }
 
 // ============================================================
