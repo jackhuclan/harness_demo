@@ -22,6 +22,7 @@ var builder = WebApplication.CreateBuilder(args);
 // 加载 skills/ 目录下所有 SKILL.md，构建 agent -> allowed-tools 映射
 var skillsRoot = Path.Combine(AppContext.BaseDirectory, "skills");
 builder.Services.AddSingleton(new HarnessDemo.Model.SkillCatalog(skillsRoot));
+builder.Services.AddSingleton<HarnessDemo.Model.AgentRegistry>();
 builder.WebHost.UseUrls("http://localhost:5000");
 
 // --- 状态层 ---
@@ -162,9 +163,15 @@ app.MapGet("/tools", (ToolExecutor exec) => Results.Ok(
     exec.RegisteredTools.Select(t => new { t.Name, t.Description })));
 
 // 列出所有可用智能体
-app.MapGet("/agents", () => Results.Ok(
-    HarnessDemo.Model.AgentRegistry.Agents.Select(a => new {
-        name = a.Name, title = a.Title, description = a.Description, tools = a.Tools
+app.MapGet("/agents", (HarnessDemo.Model.AgentRegistry registry) =>
+    Results.Ok(registry.Agents.Select(a => new
+    {
+        name = a.Name,
+        title = a.Title,
+        description = a.Description,
+        systemPrompt = a.SystemPrompt,
+        tools = a.Tools,
+        skills = a.Skills.Select(s => new { name = s.Name, description = s.Description, allowedTools = s.AllowedTools })
     })));
 
 // 查看某 Agent 加载的技能及其 allowed-tools
