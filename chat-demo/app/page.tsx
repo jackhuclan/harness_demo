@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { sendChatStream, listTools } from "@/lib/api";
+import { Markdown } from "@/lib/Markdown";
 
 interface Message {
   role: "user" | "assistant";
@@ -117,14 +118,16 @@ export default function ChatPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="hidden text-right text-xs text-slate-500 dark:text-slate-400 sm:block">
-            <div className="mb-1">已挂载工具</div>
-            {tools.map((t) => (
-              <span key={t.name} className="ml-1 rounded bg-emerald-500/20 px-1.5 py-0.5 text-emerald-600 dark:text-emerald-300">
-                {t.name}
-              </span>
-            ))}
-          </div>
+          <details className="hidden text-right text-xs text-slate-500 dark:text-slate-400 sm:block">
+            <summary className="cursor-pointer select-none">已挂载工具 ({tools.length})</summary>
+            <div className="mt-1 flex max-w-xs flex-wrap justify-end gap-1">
+              {tools.map((t) => (
+                <span key={t.name} className="rounded bg-emerald-500/20 px-1.5 py-0.5 text-emerald-600 dark:text-emerald-300">
+                  {t.name}
+                </span>
+              ))}
+            </div>
+          </details>
           <button
             onClick={toggle}
             title={dark ? "切换到浅色" : "切换到深色"}
@@ -162,13 +165,17 @@ export default function ChatPage() {
             className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
           >
             <div
-              className={`max-w-[80%] whitespace-pre-wrap rounded-2xl px-4 py-2 text-sm ${
+              className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm ${
                 m.role === "user"
-                  ? "bg-emerald-600 text-white"
+                  ? "bg-emerald-600 text-white whitespace-pre-wrap"
                   : "bg-slate-200 text-slate-900 dark:bg-slate-700 dark:text-slate-100"
               }`}
             >
-              {m.content || (loading ? "▍" : "")}
+              {m.role === "assistant" ? (
+                m.content ? <Markdown text={m.content} /> : (loading ? "▍" : "")
+              ) : (
+                m.content
+              )}
             </div>
           </div>
         ))}
