@@ -1,0 +1,9 @@
+{
+  "id": "pda_chain",
+  "name": "技能6 · 多技能串联",
+  "agent": "pda",
+  "trigger": "看一下上午跑的这批数据怎么样",
+  "description": "自动串联 统计→异常→分解→归因→建议，输出完整链路结论。",
+  "tool": "ovl_chain",
+  "toolArgs": "{}"
+}

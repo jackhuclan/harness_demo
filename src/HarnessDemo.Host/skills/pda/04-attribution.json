@@ -1,0 +1,9 @@
+{
+  "id": "pda_attribution",
+  "name": "技能4 · 归因分析",
+  "agent": "pda",
+  "trigger": "为什么这批 overlay 偏大，根因是什么？",
+  "description": "field-to-field 残差分析，定位 overlay 偏大根因，给出 R² 证据。",
+  "tool": "attribution",
+  "toolArgs": "{}"
+}

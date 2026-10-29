@@ -15,8 +15,8 @@ public static class AgentRegistry
             "你是 OVL 处方管理专家，负责 Wafer 装载、处方分析、性能优化和 13 步建方流程。",
             new[] { "wafer_load", "recipe_analyze", "recipe_optimize", "recipe_create", "custom_skill_learn" }),
 
-        new AgentDef("pda", "生产数据分析", "OVL 统计、异常定位、误差分解、归因、决策建议、R2R 补偿",
-            "你是 OVL 生产数据分析专家，负责统计过程控制、异常诊断、误差预算分解和 R2R 补偿。",
+        new AgentDef("pda", "生产数据分析", "OVL 统计 / 异常 / 分解 / 归因 / 决策 / 补偿 / 多技能串联",
+            "我可直接统计生产片 OVL 情况（数据统计 / 异常分析 / 分解 / 归因 / 决策 / 补偿 / 多技能串联）。",
             new[] { "ovl_statistics", "ovl_anomaly", "budget_decomp", "attribution", "decision_advice", "r2r_comp", "ovl_chain" }),
 
         new AgentDef("tma", "机台监测分析", "机台性能、周趋势、硬件健康（光源寿命）",

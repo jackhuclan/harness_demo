@@ -1,0 +1,9 @@
+{
+  "id": "pda_advice",
+  "name": "技能5 · 决策建议",
+  "agent": "pda",
+  "trigger": "针对这个问题该怎么改进、给个建议？",
+  "description": "基于分析结果给出模型升级/采样/工艺改进建议。",
+  "tool": "decision_advice",
+  "toolArgs": "{}"
+}
