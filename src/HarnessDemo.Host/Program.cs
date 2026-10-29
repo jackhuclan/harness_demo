@@ -26,51 +26,9 @@ builder.Services.AddSingleton<IMemoryStore, InMemoryMemoryStore>();
 builder.Services.AddSingleton<ITaskStore, InMemoryTaskStore>();
 
 // --- 模型层：按配置选择真实大模型 or 规则模拟 ---
-// 注册 Agent 路由配置（可后续从 appsettings.json 覆盖）
-builder.Services.Configure<HarnessDemo.Model.AgentRouteOptions>(o =>
-{
-    o.AgentRoutes = new()
-    {
-        new() { Pattern = @"(建方|建处方|创建处方|recipe.*create|load.*foup|加载.*硅片|wafer.*load|处方建立)", Agent = "recipe" },
-        new() { Pattern = @"(分析.*处方|处方.*分析|recipe.*analy|优化处方|recipe.*optim)", Agent = "recipe" },
-        new() { Pattern = @"(统计|stats|3σ|lot.*批|异常|fail|分解|budget|归因|attribution|建议|advice|补偿|compensat|R2R|链路|chain)", Agent = "pda" },
-        new() { Pattern = @"(性能|tool performance|重复性|趋势|trend|光源|硬件|寿命|衰减)", Agent = "tma" },
-        new() { Pattern = @"(诊断|报错|error|focus|聚焦|对准|处置|复测|经验|反馈|learn)", Agent = "tdi" },
-    };
-    o.ToolRoutes = new()
-    {
-        ["recipe"] = new()
-        {
-            new() { Pattern = @"(建方|建处方|创建处方|recipe.*create)", Tool = "recipe_create", Args = "{}" },
-            new() { Pattern = @"(load|加载|foup|slot|上片|wafer.*load)", Tool = "wafer_load", Args = "{\"foup\":\"Foup2\",\"slot\":5}" },
-            new() { Pattern = @"(优化|optimize|MRO|self-calibration)", Tool = "recipe_optimize", Args = "{}" },
-            new() { Pattern = @"(自定义技能|习得规则|custom.*skill|动态采样)", Tool = "custom_skill_learn", Args = "{}" },
-            new() { Pattern = @"(分析.*处方|处方.*分析|recipe.*analy)", Tool = "recipe_analyze", Args = "{}" },
-        },
-        ["pda"] = new()
-        {
-            new() { Pattern = @"(统计|stats|3σ)", Tool = "ovl_statistics", Args = "{}" },
-            new() { Pattern = @"(异常|fail|根因|为什么.*fail)", Tool = "ovl_anomaly", Args = "{}" },
-            new() { Pattern = @"(分解|budget|贡献项)", Tool = "budget_decomp", Args = "{}" },
-            new() { Pattern = @"(归因|attribution|边缘|field-to-field)", Tool = "attribution", Args = "{}" },
-            new() { Pattern = @"(建议|改进|advice)", Tool = "decision_advice", Args = "{}" },
-            new() { Pattern = @"(补偿|compensat|R2R|下发)", Tool = "r2r_comp", Args = "{}" },
-            new() { Pattern = @"(链路|chain|完整|怎么样|如何)", Tool = "ovl_chain", Args = "{}" },
-        },
-        ["tma"] = new()
-        {
-            new() { Pattern = @"(趋势|trend|近.*周|近.*月)", Tool = "tool_trend", Args = "{}" },
-            new() { Pattern = @"(光源|硬件|寿命|衰减|PM)", Tool = "hardware_health", Args = "{}" },
-            new() { Pattern = @"(性能|tool performance|重复性|MAM|TIS)", Tool = "tool_performance", Args = "{}" },
-        },
-        ["tdi"] = new()
-        {
-            new() { Pattern = @"(确认|执行处置|复测|confirm)", Tool = "disposition_confirm", Args = "{}" },
-            new() { Pattern = @"(经验|反馈|习得|learn)", Tool = "experience_learn", Args = "{}" },
-            new() { Pattern = @"(诊断|报错|error|focus|聚焦|对准)", Tool = "ovl_diagnose", Args = "{\"error\":\"粗聚焦失败\"}" },
-        },
-    };
-});
+// Agent 路由规则从 appsettings.json 的 AgentRouting 节读取
+builder.Services.Configure<HarnessDemo.Model.AgentRouteOptions>(
+    builder.Configuration.GetSection(HarnessDemo.Model.AgentRouteOptions.SectionName));
 
 var useRealLlm = Environment.GetEnvironmentVariable("USE_REAL_LLM")?.Equals("true", StringComparison.OrdinalIgnoreCase) == true;
 if (useRealLlm)
