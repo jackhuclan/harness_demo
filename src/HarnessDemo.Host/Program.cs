@@ -153,6 +153,12 @@ app.MapPost("/chat", async (ChatRequest req, SessionManager sessions, Cancellati
 app.MapGet("/tools", (ToolExecutor exec) => Results.Ok(
     exec.RegisteredTools.Select(t => new { t.Name, t.Description })));
 
+// 列出所有可用智能体
+app.MapGet("/agents", () => Results.Ok(
+    HarnessDemo.Model.AgentRegistry.Agents.Select(a => new {
+        name = a.Name, title = a.Title, description = a.Description, tools = a.Tools
+    })));
+
 // 流式对话：SSE (text/event-stream)，逐字返回模型输出
 app.MapPost("/chat/stream", async (ChatRequest req, Agent agent, HttpContext ctx) =>
 {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { sendChatStream, listTools, listSessions, fetchSessionMessages, SessionSummary } from "@/lib/api";
+import { sendChatStream, listTools, listSessions, fetchSessionMessages, listAgents, SessionSummary, AgentSummary } from "@/lib/api";
 import { Markdown } from "@/lib/Markdown";
 
 interface Message {
@@ -34,6 +34,8 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(false);
   const [tools, setTools] = useState<{ name: string; description: string }[]>([]);
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
+  const [agents, setAgents] = useState<AgentSummary[]>([]);
+  const [activeAgent, setActiveAgent] = useState("intro");
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -52,6 +54,7 @@ export default function ChatPage() {
 
   useEffect(() => {
     listTools().then(setTools).catch(() => setTools([]));
+    listAgents().then(setAgents).catch(() => setAgents([]));
     refreshSessions();
   }, [refreshSessions]);
 
@@ -70,6 +73,12 @@ export default function ChatPage() {
     sessionStorage.setItem("harness_session", next);
     setSessionId(next);
     setMessages([]);
+  }
+
+  function switchAgent(name: string) {
+    if (name === activeAgent) return;
+    setActiveAgent(name);
+    newChat();
   }
 
   function switchSession(id: string) {
@@ -160,6 +169,24 @@ export default function ChatPage() {
 
       {/* 主聊天区 */}
       <div className="flex flex-1 flex-col p-4">
+        {/* Agent 标签页 */}
+        <div className="mb-4 flex gap-1 rounded-xl bg-white/60 p-1 shadow-sm dark:bg-slate-800/40">
+          {agents.map((a) => (
+            <button
+              key={a.name}
+              onClick={() => switchAgent(a.name)}
+              className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+                activeAgent === a.name
+                  ? "bg-emerald-600 text-white shadow"
+                  : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700"
+              }`}
+              title={a.description}
+            >
+              {a.title}
+            </button>
+          ))}
+        </div>
+
         <header className="mb-4 flex items-center justify-between rounded-xl bg-white/70 px-4 py-3 shadow-sm backdrop-blur dark:bg-slate-800/60">
           <div>
             <h1 className="text-lg font-semibold">Agent Harness Chat</h1>

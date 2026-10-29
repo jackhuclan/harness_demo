@@ -37,6 +37,23 @@ export interface SessionSummary {
   preview: string;
 }
 
+export interface AgentSummary {
+  name: string;
+  title: string;
+  description: string;
+  tools: string[];
+}
+
+export async function listAgents(): Promise<AgentSummary[]> {
+  try {
+    const res = await fetch(`${API_BASE}/agents`);
+    if (!res.ok) return [];
+    return await res.json();
+  } catch {
+    return [];
+  }
+}
+
 export async function listSessions(): Promise<SessionSummary[]> {
   try {
     const res = await fetch(`${API_BASE}/sessions`);
