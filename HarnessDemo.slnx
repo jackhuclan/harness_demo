@@ -10,4 +10,7 @@
     <Project Path="src/HarnessDemo.Skills/HarnessDemo.Skills.csproj" />
     <Project Path="src/HarnessDemo.State/HarnessDemo.State.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/HarnessDemo.Tests/HarnessDemo.Tests.csproj" />
+  </Folder>
 </Solution>

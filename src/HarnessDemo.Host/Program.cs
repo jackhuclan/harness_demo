@@ -53,6 +53,23 @@ builder.Services.AddSingleton<IToolExecutor>(sp => sp.GetRequiredService<ToolExe
 builder.Services.AddSingleton<ITool, CalculatorTool>();
 builder.Services.AddSingleton<ITool, TimeTool>();
 
+// --- OVL Agent 演示工具（FR-MGT/PDA/TMA/TDI）---
+builder.Services.AddSingleton<OvlDataStore>();
+builder.Services.AddSingleton<ITool, WaferLoadTool>();
+builder.Services.AddSingleton<ITool, RecipeAnalyzeTool>();
+builder.Services.AddSingleton<ITool, OvlStatisticsTool>();
+builder.Services.AddSingleton<ITool, OvlAnomalyTool>();
+builder.Services.AddSingleton<ITool, ToolPerformanceTool>();
+builder.Services.AddSingleton<ITool, OvlDiagnosisTool>();
+builder.Services.AddSingleton<ITool, BudgetDecompTool>();
+builder.Services.AddSingleton<ITool, AttributionTool>();
+builder.Services.AddSingleton<ITool, DecisionAdviceTool>();
+builder.Services.AddSingleton<ITool, R2RCompTool>();
+builder.Services.AddSingleton<ITool, RecipeOptimizeTool>();
+builder.Services.AddSingleton<ITool, ToolTrendTool>();
+builder.Services.AddSingleton<ITool, HardwareHealthTool>();
+builder.Services.AddSingleton<ITool, ExperienceLearnTool>();
+
 // --- 会话与路由层 ---
 builder.Services.AddSingleton<Router>();
 builder.Services.AddSingleton<SessionManager>();

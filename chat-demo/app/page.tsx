@@ -98,9 +98,12 @@ export default function ChatPage() {
   }
 
   const suggestions = [
-    "你好，介绍一下你自己",
-    "现在几点了？",
-    "请调用计算器算 25 * 4 + 10",
+    "帮我看下 LOT-2207 的统计结果",
+    "为什么这批数据大多都是 fail？",
+    "分析下 ProductA_M1M2_Layer 这个处方",
+    "机台性能怎么样？",
+    "看下粗聚焦失败怎么诊断",
+    "光源还能用多久？",
   ];
 
   return (

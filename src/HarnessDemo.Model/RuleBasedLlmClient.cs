@@ -26,6 +26,62 @@ public sealed class RuleBasedLlmClient : ILlmClient
 
         var lastUser = context.LastOrDefault(m => m.Role == Role.User)?.Content ?? "";
 
+        // --- OVL Agent 意图路由（FR-SYS-001）---
+        if (Regex.IsMatch(lastUser, @"(统计|stats|3σ|lot).*(lot|LOT|批)", RegexOptions.IgnoreCase))
+        {
+            Console.WriteLine("[Model/Planner] 识别为 OVL 数据统计意图 -> ovl_statistics");
+            return Task.FromResult(new LlmDecision(true, "ovl_statistics", "{}", null));
+        }
+        if (Regex.IsMatch(lastUser, @"(fail|失败|异常|根因|为什么.*fail)", RegexOptions.IgnoreCase))
+        {
+            Console.WriteLine("[Model/Planner] 识别为 OVL 异常分析意图 -> ovl_anomaly");
+            return Task.FromResult(new LlmDecision(true, "ovl_anomaly", "{}", null));
+        }
+        if (Regex.IsMatch(lastUser, @"(分析.*处方|处方.*分析|recipe.*analy)", RegexOptions.IgnoreCase))
+        {
+            Console.WriteLine("[Model/Planner] 识别为处方分析意图 -> recipe_analyze");
+            return Task.FromResult(new LlmDecision(true, "recipe_analyze", "{}", null));
+        }
+        if (Regex.IsMatch(lastUser, @"(性能|tool performance|重复性|MAM|TIS)", RegexOptions.IgnoreCase))
+        {
+            Console.WriteLine("[Model/Planner] 识别为机台性能检测意图 -> tool_performance");
+            return Task.FromResult(new LlmDecision(true, "tool_performance", "{}", null));
+        }
+        if (Regex.IsMatch(lastUser, @"(诊断|报错|error|focus|聚焦|对准)", RegexOptions.IgnoreCase))
+        {
+            Console.WriteLine("[Model/Planner] 识别为机台诊断意图 -> ovl_diagnose");
+            return Task.FromResult(new LlmDecision(true, "ovl_diagnose", "{\"error\":\"粗聚焦失败\"}", null));
+        }
+        if (Regex.IsMatch(lastUser, @"(load|加载|foup|slot|上片)", RegexOptions.IgnoreCase))
+        {
+            Console.WriteLine("[Model/Planner] 识别为硅片加载意图 -> wafer_load");
+            return Task.FromResult(new LlmDecision(true, "wafer_load", "{\"foup\":\"Foup2\",\"slot\":5}", null));
+        }
+        if (Regex.IsMatch(lastUser, @"(分解|budget|贡献项)", RegexOptions.IgnoreCase))
+            return Task.FromResult(new LlmDecision(true, "budget_decomp", "{}", null));
+        if (Regex.IsMatch(lastUser, @"(归因|attribution|field-to-field|边缘)", RegexOptions.IgnoreCase))
+            return Task.FromResult(new LlmDecision(true, "attribution", "{}", null));
+        if (Regex.IsMatch(lastUser, @"(建议|改进|advice)", RegexOptions.IgnoreCase))
+            return Task.FromResult(new LlmDecision(true, "decision_advice", "{}", null));
+        if (Regex.IsMatch(lastUser, @"(补偿|compensat|R2R|下发)", RegexOptions.IgnoreCase))
+            return Task.FromResult(new LlmDecision(true, "r2r_comp", "{}", null));
+        if (Regex.IsMatch(lastUser, @"(优化|optimize|self-calibration|MRO)", RegexOptions.IgnoreCase))
+            return Task.FromResult(new LlmDecision(true, "recipe_optimize", "{}", null));
+        if (Regex.IsMatch(lastUser, @"(趋势|trend|近.*周|近.*月)", RegexOptions.IgnoreCase))
+            return Task.FromResult(new LlmDecision(true, "tool_trend", "{}", null));
+        if (Regex.IsMatch(lastUser, @"(光源|硬件|寿命|衰减|PM)", RegexOptions.IgnoreCase))
+            return Task.FromResult(new LlmDecision(true, "hardware_health", "{}", null));
+        if (Regex.IsMatch(lastUser, @"(经验|反馈|习得|learn)", RegexOptions.IgnoreCase))
+            return Task.FromResult(new LlmDecision(true, "experience_learn", "{}", null));
+
+        // 意图未匹配 -> 引导提示（FR-SYS-001 负例）
+        var known = new[] { "统计 LOT", "为什么 fail", "分析处方", "机台性能", "诊断报错", "加载 Foup/slot" };
+        if (lastUser.Length > 0 && !Regex.IsMatch(lastUser, @"你好|介绍|hello|hi", RegexOptions.IgnoreCase))
+        {
+            return Task.FromResult(new LlmDecision(false, null, null,
+                $"未识别到明确意图。你可以试试：\n- {string.Join("\n- ", known)}"));
+        }
+
         // 意图 1：算术计算 -> 调用 calculator 工具
         var calc = Regex.Match(
             lastUser,
