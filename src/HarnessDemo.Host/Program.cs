@@ -55,24 +55,44 @@ builder.Services.AddSingleton<ITool, TimeTool>();
 
 // --- OVL Agent 演示工具（FR-MGT/PDA/TMA/TDI）---
 builder.Services.AddSingleton<OvlDataStore>();
-builder.Services.AddSingleton<ITool, WaferLoadTool>();
-builder.Services.AddSingleton<ITool, RecipeAnalyzeTool>();
-builder.Services.AddSingleton<ITool, OvlStatisticsTool>();
-builder.Services.AddSingleton<ITool, OvlAnomalyTool>();
-builder.Services.AddSingleton<ITool, ToolPerformanceTool>();
-builder.Services.AddSingleton<ITool, OvlDiagnosisTool>();
-builder.Services.AddSingleton<ITool, BudgetDecompTool>();
-builder.Services.AddSingleton<ITool, AttributionTool>();
-builder.Services.AddSingleton<ITool, DecisionAdviceTool>();
-builder.Services.AddSingleton<ITool, R2RCompTool>();
-builder.Services.AddSingleton<ITool, RecipeOptimizeTool>();
-builder.Services.AddSingleton<ITool, ToolTrendTool>();
-builder.Services.AddSingleton<ITool, HardwareHealthTool>();
-builder.Services.AddSingleton<ITool, ExperienceLearnTool>();
-builder.Services.AddSingleton<ITool, MultiSkillChainTool>();
-builder.Services.AddSingleton<ITool, DispositionConfirmTool>();
-builder.Services.AddSingleton<ITool, RecipeCreateTool>();
-builder.Services.AddSingleton<ITool, CustomSkillLearnTool>();
+// 先注册具体类型（MultiSkillChainTool 等需要注入具体工具）
+builder.Services.AddSingleton<WaferLoadTool>();
+builder.Services.AddSingleton<RecipeAnalyzeTool>();
+builder.Services.AddSingleton<OvlStatisticsTool>();
+builder.Services.AddSingleton<OvlAnomalyTool>();
+builder.Services.AddSingleton<ToolPerformanceTool>();
+builder.Services.AddSingleton<OvlDiagnosisTool>();
+builder.Services.AddSingleton<BudgetDecompTool>();
+builder.Services.AddSingleton<AttributionTool>();
+builder.Services.AddSingleton<DecisionAdviceTool>();
+builder.Services.AddSingleton<R2RCompTool>();
+builder.Services.AddSingleton<RecipeOptimizeTool>();
+builder.Services.AddSingleton<ToolTrendTool>();
+builder.Services.AddSingleton<HardwareHealthTool>();
+builder.Services.AddSingleton<ExperienceLearnTool>();
+builder.Services.AddSingleton<MultiSkillChainTool>();
+builder.Services.AddSingleton<DispositionConfirmTool>();
+builder.Services.AddSingleton<RecipeCreateTool>();
+builder.Services.AddSingleton<CustomSkillLearnTool>();
+// 再把它们登记为 ITool（供 ToolExecutor 扫描）
+builder.Services.AddSingleton<ITool>(sp => sp.GetRequiredService<WaferLoadTool>());
+builder.Services.AddSingleton<ITool>(sp => sp.GetRequiredService<RecipeAnalyzeTool>());
+builder.Services.AddSingleton<ITool>(sp => sp.GetRequiredService<OvlStatisticsTool>());
+builder.Services.AddSingleton<ITool>(sp => sp.GetRequiredService<OvlAnomalyTool>());
+builder.Services.AddSingleton<ITool>(sp => sp.GetRequiredService<ToolPerformanceTool>());
+builder.Services.AddSingleton<ITool>(sp => sp.GetRequiredService<OvlDiagnosisTool>());
+builder.Services.AddSingleton<ITool>(sp => sp.GetRequiredService<BudgetDecompTool>());
+builder.Services.AddSingleton<ITool>(sp => sp.GetRequiredService<AttributionTool>());
+builder.Services.AddSingleton<ITool>(sp => sp.GetRequiredService<DecisionAdviceTool>());
+builder.Services.AddSingleton<ITool>(sp => sp.GetRequiredService<R2RCompTool>());
+builder.Services.AddSingleton<ITool>(sp => sp.GetRequiredService<RecipeOptimizeTool>());
+builder.Services.AddSingleton<ITool>(sp => sp.GetRequiredService<ToolTrendTool>());
+builder.Services.AddSingleton<ITool>(sp => sp.GetRequiredService<HardwareHealthTool>());
+builder.Services.AddSingleton<ITool>(sp => sp.GetRequiredService<ExperienceLearnTool>());
+builder.Services.AddSingleton<ITool>(sp => sp.GetRequiredService<MultiSkillChainTool>());
+builder.Services.AddSingleton<ITool>(sp => sp.GetRequiredService<DispositionConfirmTool>());
+builder.Services.AddSingleton<ITool>(sp => sp.GetRequiredService<RecipeCreateTool>());
+builder.Services.AddSingleton<ITool>(sp => sp.GetRequiredService<CustomSkillLearnTool>());
 
 // --- 会话与路由层 ---
 builder.Services.AddSingleton<Router>();
